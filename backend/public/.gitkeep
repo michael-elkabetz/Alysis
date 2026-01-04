@@ -1,0 +1,4 @@
+# This directory contains the built React frontend in production.
+# The Dockerfile copies the built frontend here.
+# During local development, the frontend runs separately on port 5173.
+
