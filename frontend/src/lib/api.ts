@@ -264,6 +264,15 @@ export async function publishPromptVersion(
   });
 }
 
+export async function deletePromptVersion(
+  analysisId: string,
+  promptId: string
+): Promise<{ success: boolean }> {
+  return fetchApi<{ success: boolean }>(`/api/v1/analyses/${analysisId}/prompts/${promptId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function testPromptVersion(
   analysisId: string,
   promptId: string,

@@ -120,4 +120,25 @@ export const promptRepository = {
     if (!version) return null
     return { ...version, vendor: version.provider as Vendor }
   },
+
+  async delete(analysisId: string, promptId: string): Promise<boolean> {
+    const result = await db
+      .delete(schema.promptVersions)
+      .where(
+        and(
+          eq(schema.promptVersions.analysisId, analysisId),
+          eq(schema.promptVersions.id, promptId)
+        )
+      )
+      .returning({ id: schema.promptVersions.id })
+    return result.length > 0
+  },
+
+  async count(analysisId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.promptVersions)
+      .where(eq(schema.promptVersions.analysisId, analysisId))
+    return Number(result?.count) || 0
+  },
 }

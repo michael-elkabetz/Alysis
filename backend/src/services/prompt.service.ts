@@ -51,4 +51,32 @@ export const promptService = {
     await analysisRepository.update(analysisId, { activeVersionId: promptId })
     return version
   },
+
+  async delete(analysisId: string, promptId: string): Promise<{ success: boolean; error?: string }> {
+    // Check if this is the last version
+    const count = await promptRepository.count(analysisId)
+    if (count <= 1) {
+      return { success: false, error: 'Cannot delete the last version' }
+    }
+
+    // Check if this is the active version
+    const analysis = await analysisRepository.findById(analysisId)
+    const isActive = analysis?.activeVersionId === promptId
+
+    // Delete the version
+    const deleted = await promptRepository.delete(analysisId, promptId)
+    if (!deleted) {
+      return { success: false, error: 'Version not found' }
+    }
+
+    // If we deleted the active version, activate the latest remaining version
+    if (isActive) {
+      const latest = await promptRepository.findLatest(analysisId)
+      if (latest) {
+        await analysisRepository.update(analysisId, { activeVersionId: latest.id })
+      }
+    }
+
+    return { success: true }
+  },
 }

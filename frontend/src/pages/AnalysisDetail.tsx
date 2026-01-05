@@ -23,12 +23,14 @@ import {
   CheckCircle,
   Gauge,
   Coins,
+  History,
 } from "lucide-react";
 import {
   getAnalysis,
   getPromptVersions,
   createPromptVersion,
   publishPromptVersion,
+  deletePromptVersion,
   getVendorsAndModels,
   testAnalysisPrompt,
   updateAnalysis,
@@ -37,6 +39,7 @@ import {
   regenerateApiKey,
   getAnalysisStats,
   type AnalysisStats,
+  type PromptVersion,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -97,6 +100,9 @@ export default function AnalysisDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showResultPanel, setShowResultPanel] = useState(false);
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [versionToDelete, setVersionToDelete] = useState<PromptVersion | null>(null);
+  const [isDeletingVersion, setIsDeletingVersion] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
 
@@ -151,6 +157,7 @@ export default function AnalysisDetail() {
         vendor,
         model: activeVersion.model,
       });
+      setSelectedVersionId(activeVersion.id);
     }
   }, [analysis, versions]);
 
@@ -165,18 +172,32 @@ export default function AnalysisDetail() {
     }
   }, [promptState.vendor, modelsByVendor]);
 
+  const latestVersion = versions[0];
+  const isViewingOldVersion = selectedVersionId && latestVersion && selectedVersionId !== latestVersion.id;
+  const selectedVersion = versions.find(v => v.id === selectedVersionId);
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const newVersion = await createPromptVersion(id!, {
-        systemPrompt: promptState.systemPrompt,
-        vendor: promptState.vendor as "openai" | "anthropic" | "gemini",
-        model: promptState.model,
-      });
-      await publishPromptVersion(id!, newVersion.id);
-      queryClient.invalidateQueries({ queryKey: ["analysis", id] });
-      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
-      toast.success("Prompt saved and published");
+
+      // If viewing an old version, just activate it instead of creating new
+      if (isViewingOldVersion && selectedVersionId) {
+        await publishPromptVersion(id!, selectedVersionId);
+        queryClient.invalidateQueries({ queryKey: ["analysis", id] });
+        queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+        toast.success("Version activated");
+      } else {
+        // Create new version
+        const newVersion = await createPromptVersion(id!, {
+          systemPrompt: promptState.systemPrompt,
+          vendor: promptState.vendor as "openai" | "anthropic" | "gemini",
+          model: promptState.model,
+        });
+        await publishPromptVersion(id!, newVersion.id);
+        queryClient.invalidateQueries({ queryKey: ["analysis", id] });
+        queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+        toast.success("New version saved");
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -331,6 +352,53 @@ export default function AnalysisDetail() {
   const handleCopyAppId = () => {
     navigator.clipboard.writeText(id!);
     toast.success("App ID copied");
+  };
+
+  const handleSelectVersion = (version: PromptVersion) => {
+    setSelectedVersionId(version.id);
+    let vendor = "openai";
+    if (version.model.startsWith("claude")) {
+      vendor = "anthropic";
+    } else if (version.model.startsWith("gemini")) {
+      vendor = "gemini";
+    }
+    setPromptState({
+      systemPrompt: version.systemPrompt,
+      vendor,
+      model: version.model,
+    });
+  };
+
+  const handleDeleteVersion = async () => {
+    if (!versionToDelete) return;
+    try {
+      setIsDeletingVersion(true);
+      await deletePromptVersion(id!, versionToDelete.id);
+      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+      queryClient.invalidateQueries({ queryKey: ["analysis", id] });
+      toast.success(`Version ${versionToDelete.version} deleted`);
+      setVersionToDelete(null);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setIsDeletingVersion(false);
+    }
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 2) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   };
 
   const handleResultPanelClose = (open: boolean) => {
@@ -538,6 +606,119 @@ export default function AnalysisDetail() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Version Dropdown */}
+            {versions.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-10 gap-2 bg-secondary/50 border-border hover:bg-secondary hover:border-primary/30 transition-all"
+                  >
+                    <History className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      v{selectedVersion?.version || latestVersion?.version}
+                    </span>
+                    {selectedVersion?.id === latestVersion?.id && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary/20 text-primary">
+                        Latest
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="bg-card border-border w-64"
+                >
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Version History
+                  </div>
+                  <DropdownMenuSeparator />
+                  {versions.map((version, index) => {
+                    const isLatest = index === 0;
+                    const isSelected = version.id === selectedVersionId;
+                    return (
+                      <DropdownMenuItem
+                        key={version.id}
+                        onClick={() => handleSelectVersion(version)}
+                        className={`cursor-pointer flex items-center justify-between gap-2 ${
+                          isSelected ? "bg-primary/10" : "focus:bg-secondary"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className={`font-medium ${isSelected ? "text-primary" : ""}`}>
+                            v{version.version}
+                          </span>
+                          {isLatest && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary/20 text-primary">
+                              Latest
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {formatRelativeTime(version.createdAt)}
+                          </span>
+                        </div>
+                        {versions.length > 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionToDelete(version);
+                            }}
+                            className="p-1 hover:bg-red-500/10 rounded opacity-50 hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3 h-3 text-muted-foreground hover:text-red-400" />
+                          </button>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <Select
+              value={promptState.vendor}
+              onValueChange={(v) =>
+                setPromptState({ ...promptState, vendor: v })
+              }
+            >
+              <SelectTrigger className="w-36 h-10 bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {vendors.map((vendor) => (
+                  <SelectItem
+                    key={vendor.id}
+                    value={vendor.id}
+                    className="focus:bg-secondary"
+                  >
+                    {vendor.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={promptState.model}
+              onValueChange={(v) =>
+                setPromptState({ ...promptState, model: v })
+              }
+            >
+              <SelectTrigger className="w-44 h-10 bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                {currentModels.map((model) => (
+                  <SelectItem
+                    key={model.id}
+                    value={model.id}
+                    className="focus:bg-secondary"
+                  >
+                    {model.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -584,50 +765,6 @@ export default function AnalysisDetail() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
-            <Select
-              value={promptState.vendor}
-              onValueChange={(v) =>
-                setPromptState({ ...promptState, vendor: v })
-              }
-            >
-              <SelectTrigger className="w-36 h-10 bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {vendors.map((vendor) => (
-                  <SelectItem
-                    key={vendor.id}
-                    value={vendor.id}
-                    className="focus:bg-secondary"
-                  >
-                    {vendor.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={promptState.model}
-              onValueChange={(v) =>
-                setPromptState({ ...promptState, model: v })
-              }
-            >
-              <SelectTrigger className="w-44 h-10 bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                {currentModels.map((model) => (
-                  <SelectItem
-                    key={model.id}
-                    value={model.id}
-                    className="focus:bg-secondary"
-                  >
-                    {model.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </header>
 
@@ -636,6 +773,7 @@ export default function AnalysisDetail() {
             <Label className="text-sm text-muted-foreground mb-2">
               Analysis Instructions
             </Label>
+
             <div className="flex-1 editor-panel">
               <Textarea
                 className="h-[400px] w-full p-4 bg-transparent border-0 focus-visible:ring-0 text-sm font-mono leading-relaxed text-foreground placeholder:text-muted-foreground/50 resize-none outline-none"
@@ -811,6 +949,37 @@ export default function AnalysisDetail() {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!versionToDelete} onOpenChange={(open) => !open && setVersionToDelete(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Version</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete version {versionToDelete?.version}? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-secondary border-border hover:bg-secondary/80">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteVersion}
+              disabled={isDeletingVersion}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeletingVersion ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

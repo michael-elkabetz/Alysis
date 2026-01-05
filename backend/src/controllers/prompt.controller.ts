@@ -70,6 +70,18 @@ export const promptController = new Elysia({ prefix: '/api/v1/analyses/:id/promp
     detail: { tags: ['Prompts'], summary: 'Get prompt version' },
   })
 
+  .delete('/:promptId', async ({ params, set }) => {
+    const result = await promptService.delete(params.id, params.promptId)
+    if (!result.success) {
+      set.status = 400
+      return { error: result.error }
+    }
+    return { success: true }
+  }, {
+    params: t.Object({ id: t.String(), promptId: t.String() }),
+    detail: { tags: ['Prompts'], summary: 'Delete prompt version' },
+  })
+
   .get('/by-number/:version', async ({ params, set }) => {
     const versionNumber = parseInt(params.version)
     if (isNaN(versionNumber)) {
