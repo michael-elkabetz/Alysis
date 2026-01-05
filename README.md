@@ -70,15 +70,15 @@ cd frontend && npm install && npm run dev
 
 ## Tech Stack
 
-| Component    | Technology                                  |
-| ------------ | ------------------------------------------- |
-| **Runtime**  | Bun                                         |
-| **Backend**  | Elysia                                      |
-| **Frontend** | React 18 + Vite + TailwindCSS + shadcn/ui   |
-| **Database** | PostgreSQL 16                               |
-| **ORM**      | Drizzle ORM                                 |
+| Component    | Technology                                 |
+| ------------ |--------------------------------------------|
+| **Runtime**  | Bun                                        |
+| **Backend**  | Elysia                                     |
+| **Frontend** | React 19 + Vite + TailwindCSS + shadcn/ui  |
+| **Database** | PostgreSQL 16                              |
+| **ORM**      | Drizzle ORM                                |
 | **AI**       | OpenAI SDK, Anthropic SDK, Google GenAI SDK |
-| **Data**     | TanStack Query                              |
+| **Data**     | TanStack Query                             |
 
 ---
 
@@ -146,11 +146,11 @@ Full API documentation available at `/docs` (Swagger UI).
 
 ### Supported Models
 
-**OpenAI:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`
+**OpenAI:** `gpt-5.2`, `gpt-4o`
 
-**Anthropic:** `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest`, `claude-3-opus-latest`
+**Anthropic:** `claude-opus-4-5-20251101`, `claude-sonnet-4-20250514`
 
-**Google Gemini:** `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`
+**Google Gemini:** `gemini-3-pro-preview`, `gemini-2.5-flash`
 
 ---
 

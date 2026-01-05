@@ -154,7 +154,7 @@ export function CreateAppDialog({
       return;
     }
     if (!formData.systemPrompt.trim()) {
-      toast.error('Please enter a system prompt');
+      toast.error('Please enter analysis instructions');
       return;
     }
     createMutation.mutate();
@@ -425,7 +425,7 @@ export function CreateAppDialog({
 
           {step === 'prompt' && (
             <div className="space-y-3 h-full flex flex-col">
-              <Label htmlFor="systemPrompt" className="text-sm">System Prompt</Label>
+              <Label htmlFor="systemPrompt" className="text-sm">Analysis Instructions</Label>
               <Textarea
                 id="systemPrompt"
                 className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0e8] !border-0"

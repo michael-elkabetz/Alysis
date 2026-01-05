@@ -634,7 +634,7 @@ export default function AnalysisDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="flex flex-col">
             <Label className="text-sm text-muted-foreground mb-2">
-              System Prompt
+              Analysis Instructions
             </Label>
             <div className="flex-1 editor-panel">
               <Textarea
