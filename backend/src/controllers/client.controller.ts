@@ -10,7 +10,6 @@ export const clientController = new Elysia({ prefix: '/api/v1/clients' })
 
   .get('/vendors', async () => {
     const clients = await getAllClients()
-    // Only return vendors with API keys configured (via DB or env)
     const availableClients = clients.filter((c) => c.available)
     const vendors = availableClients.map((c) => ({
       id: c.name,

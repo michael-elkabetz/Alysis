@@ -1,15 +1,8 @@
-import { useLocation, Link } from "react-router-dom";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 - Page not found:", location.pathname);
-  }, [location.pathname]);
-
   return (
     <div className="min-h-screen flex items-center justify-center noise-overlay">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

@@ -5,30 +5,24 @@ import { promptService } from './prompt.service'
 import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor } from '../types'
 
 function extractJson(content: string): Record<string, unknown> | null {
-  // Try direct parse first
   try {
     return JSON.parse(content)
   } catch {
-    // Continue to other methods
   }
 
-  // Try to extract JSON from markdown code blocks
   const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (codeBlockMatch) {
     try {
       return JSON.parse(codeBlockMatch[1].trim())
     } catch {
-      // Continue
     }
   }
 
-  // Try to find JSON object or array in the content
   const jsonMatch = content.match(/(\{[\s\S]*\}|\[[\s\S]*\])/)
   if (jsonMatch) {
     try {
       return JSON.parse(jsonMatch[1])
     } catch {
-      // Continue
     }
   }
 
@@ -147,7 +141,6 @@ export const executionService = {
         callerService: params.callerService || null,
       })
     } catch {
-      // Silent fail for logging
     }
   },
 
