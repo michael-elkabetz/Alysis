@@ -10,8 +10,9 @@ import {
   executionController,
   apiKeyController,
   vendorKeyController,
-  clientController,
-} from './controllers'
+} from './domains'
+import { devToolsController } from './domains/dev-tools/dev-tools.controller'
+import { clientController } from './clients/client.controller'
 
 const PORT = process.env.PORT ?? 3001
 
@@ -36,6 +37,7 @@ const app = new Elysia()
         { name: 'Clients', description: 'AI client information' },
         { name: 'API Keys', description: 'API key management' },
         { name: 'Vendor Keys', description: 'Vendor API key management' },
+        { name: 'DevTools', description: 'Developer tools' },
       ],
       components: {
         securitySchemes: {
@@ -55,7 +57,6 @@ const app = new Elysia()
     assets: 'public',
     prefix: '/',
     indexHTML: true,
-    noCache: process.env.NODE_ENV !== 'production',
   }))
   .use(healthController)
   .use(clientController)
@@ -64,6 +65,7 @@ const app = new Elysia()
   .use(executionController)
   .use(apiKeyController)
   .use(vendorKeyController)
+  .use(devToolsController)
   .listen(PORT)
 
 export type App = typeof app

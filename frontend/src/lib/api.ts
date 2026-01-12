@@ -104,6 +104,23 @@ export interface GlobalStats {
   totalTokens: number;
 }
 
+export interface VersionCostStats {
+  versionId: string;
+  version: number;
+  model: string;
+  vendor: Vendor;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  totalInputCost: number;
+  totalOutputCost: number;
+  totalCost: number;
+  avgCostPerExecution: number;
+  avgTokensPerExecution: number;
+  executionCount: number;
+  successRate: number;
+}
+
 export interface ClientModel {
   id: string;
   name: string;
@@ -205,6 +222,10 @@ export async function deprecateAnalysis(id: string): Promise<Analysis> {
 
 export async function getAnalysisStats(id: string): Promise<AnalysisStats> {
   return fetchApi<AnalysisStats>(`/api/v1/analyses/${id}/stats`);
+}
+
+export async function getVersionCostStats(analysisId: string): Promise<VersionCostStats[]> {
+  return fetchApi<VersionCostStats[]>(`/api/v1/analyses/${analysisId}/cost-stats`);
 }
 
 export async function getAnalysisLogs(
@@ -441,6 +462,16 @@ export async function setVendorKey(
 export async function deleteVendorKey(vendor: Vendor): Promise<void> {
   await fetchApi<{ success: boolean }>(`/api/v1/vendor-keys/${vendor}`, {
     method: 'DELETE',
+  });
+}
+
+export async function generateTyphoeusInterface(
+  analysisName: string,
+  jsonOutput: Record<string, unknown>
+): Promise<{ code: string }> {
+  return fetchApi<{ code: string }>('/api/v1/dev-tools/generate-interface', {
+    method: 'POST',
+    body: JSON.stringify({ analysisName, jsonOutput }),
   });
 }
 

@@ -1,74 +1,162 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Core Operating Principles
 
-## Build & Development Commands
+This file defines **how** Claude operates in this repository. Domain-specific knowledge lives in:
+- @AGENTS.md (general repo rules)
+- @backend/AGENTS.md (backend architecture rules)  
+- @frontend/AGENTS.md (frontend React rules)
+
+**Always follow the nearest AGENTS.md file. If instructions conflict, the closest file to the edited code wins.**
+
+---
+
+## Routing & Scope
+
+### Task Classification
+
+Before starting, classify the task:
+
+- **Trivial** (single file, obvious fix) → execute directly
+- **Moderate** (2-5 files, clear scope) → brief planning then execute
+- **Complex** (architectural impact, ambiguous) → research first, propose plan
+
+### Default Scope
+
+- Work on **recently modified code only**
+- Expand scope **only when explicitly instructed**
+- Never refactor unrelated code
+
+---
+
+## Quick Reference Commands
 
 ### Backend (Bun + Elysia)
 ```bash
-cd backend
-bun install              # Install dependencies
-bun run dev              # Run with hot reload (development)
-bun run start            # Run production
-bun run build            # Build to ./dist
+cd backend && bun install           # Install deps
+cd backend && bun run dev           # Dev server (hot reload)
+cd backend && bun run build         # Production build
 ```
 
 ### Frontend (React + Vite)
 ```bash
-cd frontend
-npm install              # Install dependencies
-npm run dev              # Run dev server
-npm run build            # TypeScript check + Vite build
-npm run lint             # ESLint with zero warnings threshold
-npm run preview          # Preview production build
+cd frontend && npm install          # Install deps
+cd frontend && npm run dev          # Dev server
+cd frontend && npm run build        # TypeScript check + build
+cd frontend && npm run lint         # ESLint (zero warnings)
 ```
 
 ### Database (Drizzle ORM)
 ```bash
-cd backend
-bun run db:generate      # Generate migrations from schema changes
-bun run db:migrate       # Run migrations
-bun run db:push          # Push schema directly (dev only)
-bun run db:studio        # Open Drizzle Studio GUI
+cd backend && bun run db:generate   # Generate migrations
+cd backend && bun run db:migrate    # Run migrations
+cd backend && bun run db:push       # Push schema (dev only)
+cd backend && bun run db:studio     # Drizzle Studio GUI
 ```
 
 ### Docker
 ```bash
-docker-compose up -d     # Start full stack (postgres, backend, frontend)
-docker-compose logs -f   # View logs
-docker-compose down      # Stop stack
+docker-compose up -d                # Start stack
+docker-compose logs -f              # View logs
+docker-compose down                 # Stop stack
 ```
 
-## Architecture
+---
 
-### Backend Structure
-The backend uses a layered architecture:
-- **Controllers** (`src/controllers/`) - Elysia route handlers, request/response handling
-- **Services** (`src/services/`) - Business logic layer
-- **Repositories** (`src/repositories/`) - Data access layer using Drizzle ORM
-- **Clients** (`src/clients/`) - AI provider abstractions (OpenAI, Anthropic, Gemini)
+## Architecture Summary
 
-All AI clients implement the `AIClient` interface from `src/clients/base.ts` with a common `complete()` method.
+### Backend Layers (Strict DDD)
+
+| Layer | Responsibility | Can Call |
+|-------|---------------|----------|
+| Controller | Request/response mapping only | Services only |
+| Service | All business logic, orchestration | Repositories, Clients |
+| Repository | Database access only | Models |
+| Client | External service access | External APIs |
+| Model | Database entities | Nothing |
+
+**Rule**: No layer may bypass another. See @backend/AGENTS.md for details.
 
 ### Frontend Structure
-- **Pages** (`src/pages/`) - Route components: `AnalysesList` (home), `AnalysisDetail` (app detail)
-- **Components** (`src/components/ui/`) - shadcn/ui components
-- **Lib** (`src/lib/api.ts`) - API client with typed functions for all backend endpoints
-- **Hooks** (`src/hooks/`) - Custom React hooks
 
-Data fetching uses TanStack Query. API base URL configured via `VITE_API_URL` env var.
+```
+src/
+├── pages/          # Route components (AnalysesList, AnalysisDetail)
+├── components/ui/  # shadcn/ui components
+├── lib/api.ts      # Typed API client
+└── hooks/          # Custom React hooks
+```
 
-### Database Schema
-Located in `backend/src/db/schema.ts`. Key tables:
-- `analyses` - Analysis apps with status (draft/active/deprecated)
+Data fetching via **TanStack Query**. See @frontend/AGENTS.md for React rules.
+
+### Key Database Tables
+
+- `analyses` - Analysis apps (status: draft/active/deprecated)
 - `prompt_versions` - Versioned prompts linked to analyses
-- `execution_logs` - Audit trail of all AI executions
-- `api_keys` - Per-app API keys for authentication
-- `vendor_api_keys` - Stored AI provider keys (encrypted)
+- `execution_logs` - AI execution audit trail
+- `api_keys` - Per-app API keys
+- `vendor_api_keys` - Encrypted AI provider keys
+
+Schema at `backend/src/db/schema.ts`.
+
+---
+
+## Quality Standards
+
+### Priority Order (when trade-offs arise)
+**Correctness > Maintainability > Performance > Brevity**
+
+### Before Modifying Code
+
+1. Identify all downstream consumers using codebase search
+2. Validate changes against existing patterns
+3. Preserve exact behavior unless change is explicitly requested
+
+### Code Quality Checklist
+
+- [ ] All inputs validated
+- [ ] Error handling follows existing patterns
+- [ ] No `any` types (frontend)
+- [ ] No business logic in wrong layer (backend)
+- [ ] No commented-out code or debug logs
+
+---
+
+## Working Agreements
+
+### DO
+- Preserve exact behavior unless explicitly asked to change
+- Prefer explicit, readable code over clever abstractions
+- Keep changes minimal and reviewable
+- Follow existing project patterns and naming conventions
+
+### DON'T
+- Add new production dependencies without explicit instruction
+- Touch secrets, credentials, or production config values
+- Paste secrets into output
+- Make broad refactors without approval
+- Add comments explaining obvious code
+
+---
+
+## Environment Configuration
+
+### Required
+- `DATABASE_URL` - PostgreSQL connection string
+
+### Optional (can be stored in DB via UI)
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`  
+- `GEMINI_API_KEY`
 
 ### API Authentication
-Public execution endpoint (`POST /api/v1/analyze/:appId`) requires `X-API-Key` header.
+Public endpoint `POST /api/v1/analyze/:appId` requires `X-API-Key` header.
 
-## Environment Variables
+---
 
-Backend requires `DATABASE_URL`. AI provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`) can be set via environment or stored in database through the UI.
+## Git Hygiene
+
+- Keep changes minimal and reviewable
+- Use Conventional Commits format
+- Never push directly to main
+- Document behavior changes in appropriate docs

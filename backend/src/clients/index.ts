@@ -2,7 +2,7 @@ import type { AIClient } from './base'
 import { OpenAIClient } from './openai.client'
 import { AnthropicClient } from './anthropic.client'
 import { GeminiClient } from './gemini.client'
-import type { Vendor, ClientInfo } from '../types'
+import type { Vendor, ClientInfo } from '../shared'
 
 const clients: Record<Vendor, AIClient> = {
   openai: new OpenAIClient(),
