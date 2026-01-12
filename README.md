@@ -22,34 +22,29 @@ Build, manage, and run AI-powered analysis apps with ease.
 
 ## Key Features
 
-### One-Stop Self-Hosted Solution
-- **Complete Platform** — Everything you need to build, test, and deploy AI analysis apps in one place
-- **Self-Hosted** — Full control over your data, prompts, and AI provider keys
-- **Docker Ready** — Deploy the entire stack with a single command
+**Alysis is a self-hosted solution that combines the best of LiteLLM and LangFuse** — giving you prompt management, multi-provider AI support, and observability in one platform.
 
-### Product Playground
-- **Interactive Testing** — Test your prompts in real-time before going live
-- **Multi-Provider Support** — Switch between OpenAI, Anthropic, and Google Gemini instantly
-- **Sample Data Management** — Store and reuse test inputs for rapid iteration
-- **Prompt Versioning** — Full version control with draft → active → deprecated workflow
+### For Product Teams: Prompt Engineering & Testing
+- **Interactive Playground** — Build and refine prompts with real-time testing
+- **Multi-Provider AI** — Test across OpenAI, Anthropic, and Google Gemini without code changes
+- **Cost & Performance Visibility** — See exactly how much each execution costs and how long it takes
+- **Version Comparison** — Compare latency and pricing across different prompt versions
+- **Sample Data Management** — Save test inputs for consistent iteration
+- **Publish When Ready** — Once satisfied, turn your prompt into a production API endpoint
 
-### Performance & Cost Measurement
-- **Real-Time Analytics** — Track latency and token usage for every request
-- **Per-Version Cost Stats** — Compare pricing and performance across prompt versions
+### For Developers: Simple Integration
+- **No AI Client Code Required** — Don't manage OpenAI/Anthropic/Gemini SDKs yourself
+- **Send Data → Get Analysis** — Your only job: pass your data to the API and receive structured analysis
+- **TypeScript Interfaces Provided** — Auto-generated type definitions from actual AI responses
+- **Production-Ready Code** — Copy cURL commands and integration snippets from Dev Space
+- **API Key Authentication** — Secure endpoints with per-app keys
+- **Complete Documentation** — Interactive Swagger docs at `/docs`
+
+### Self-Hosted & Secure
+- **Full Control** — Deploy on your infrastructure, keep your data private
+- **Vendor Key Management** — Store AI provider keys securely or use environment variables
 - **Execution Logs** — Complete audit trail of all requests and responses
-- **Cost Optimization** — Make data-driven decisions about model selection
-
-### Developer Experience (Dev Space)
-- **Type-Safe Integration** — Auto-generated TypeScript interfaces from your AI responses
-- **Ready-to-Use Code** — Copy production-ready cURL commands with your API key
-- **Simple Integration** — Send data from your app → get structured analysis back
-- **Expected Response Schema** — Know exactly what your app will receive
-- **API Documentation** — Interactive Swagger docs at `/docs`
-
-### Security & Management
-- **API Key Authentication** — Secure endpoints with auto-generated keys per app
-- **Vendor Key Management** — Store AI provider keys in database or use environment variables
-- **JSON & Text Formats** — Flexible response formats for any use case
+- **Docker Ready** — One command to deploy the entire stack
 
 ---
 
