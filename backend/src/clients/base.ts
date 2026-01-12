@@ -1,4 +1,4 @@
-import type { AIResponse, ClientModel, ResponseFormat } from '../shared'
+import type { AIResponse, ClientModel, ResponseFormat } from '../shared/types'
 
 export interface AIClientConfig {
   model: string

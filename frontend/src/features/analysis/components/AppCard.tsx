@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRelativeTime } from '@/hooks';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import type { Analysis } from '@/lib/api';
 
 interface AppCardProps {

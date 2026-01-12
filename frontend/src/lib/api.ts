@@ -41,6 +41,7 @@ export interface Analysis {
   description: string | null;
   status: AnalysisStatus;
   activeVersionId: string | null;
+  sampleData: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,11 +54,21 @@ export interface AnalysisWithApiKey extends Analysis {
   };
 }
 
+export interface AnalysisInterfaces {
+  output: {
+    type: 'object';
+    properties: Record<string, { type: string; description?: string }>;
+    required?: string[];
+  };
+  _rawOutput?: Record<string, unknown>;
+}
+
 export interface PromptVersion {
   id: string;
   analysisId: string;
   version: number;
   systemPrompt: string;
+  interfaces: AnalysisInterfaces | null;
   vendor: Vendor;
   model: string;
   temperature: number;
@@ -161,16 +172,19 @@ export interface CreateAnalysisDto {
   name: string;
   description?: string;
   systemPrompt: string;
+  interfaces?: AnalysisInterfaces;
   vendor?: Vendor;
   model?: string;
   temperature?: number;
   maxTokens?: number;
   responseFormat?: ResponseFormat;
+  sampleData?: string;
 }
 
 export interface UpdateAnalysisDto {
   name?: string;
   description?: string;
+  sampleData?: string;
 }
 
 export async function createAnalysis(dto: CreateAnalysisDto): Promise<AnalysisWithApiKey> {
@@ -185,10 +199,6 @@ export async function getAnalyses(search?: string): Promise<Analysis[]> {
   if (search) params.set('search', search);
   const queryString = params.toString();
   return fetchApi<Analysis[]>(`/api/v1/analyses${queryString ? `?${queryString}` : ''}`);
-}
-
-export async function getActiveAnalyses(): Promise<Analysis[]> {
-  return fetchApi<Analysis[]>('/api/v1/analyses/active');
 }
 
 export async function getAnalysis(id: string): Promise<Analysis> {
@@ -208,20 +218,11 @@ export async function deleteAnalysis(id: string): Promise<void> {
   });
 }
 
-export async function activateAnalysis(id: string): Promise<Analysis> {
-  return fetchApi<Analysis>(`/api/v1/analyses/${id}/activate`, {
-    method: 'POST',
-  });
-}
-
-export async function deprecateAnalysis(id: string): Promise<Analysis> {
-  return fetchApi<Analysis>(`/api/v1/analyses/${id}/deprecate`, {
-    method: 'POST',
-  });
-}
-
-export async function getAnalysisStats(id: string): Promise<AnalysisStats> {
-  return fetchApi<AnalysisStats>(`/api/v1/analyses/${id}/stats`);
+export async function getAnalysisStats(id: string, versionId?: string): Promise<AnalysisStats> {
+  const params = new URLSearchParams();
+  if (versionId) params.set('versionId', versionId);
+  const queryString = params.toString();
+  return fetchApi<AnalysisStats>(`/api/v1/analyses/${id}/stats${queryString ? `?${queryString}` : ''}`);
 }
 
 export async function getVersionCostStats(analysisId: string): Promise<VersionCostStats[]> {
@@ -294,6 +295,17 @@ export async function deletePromptVersion(
   });
 }
 
+export async function updatePromptInterfaces(
+  analysisId: string,
+  promptId: string,
+  interfaces: AnalysisInterfaces
+): Promise<PromptVersion> {
+  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/${promptId}/interfaces`, {
+    method: 'PUT',
+    body: JSON.stringify({ interfaces }),
+  });
+}
+
 export async function testPromptVersion(
   analysisId: string,
   promptId: string,
@@ -330,10 +342,6 @@ export async function executeAnalysis(
 
 export async function getExecutionLog(executionId: string): Promise<ExecutionLog> {
   return fetchApi<ExecutionLog>(`/api/v1/logs/${executionId}`);
-}
-
-export async function getRecentLogs(limit = 50): Promise<ExecutionLog[]> {
-  return fetchApi<ExecutionLog[]>(`/api/v1/logs?limit=${limit}`);
 }
 
 export async function getGlobalStats(): Promise<GlobalStats> {
@@ -387,6 +395,7 @@ export interface TestAnalysisPromptDto {
   model: string;
   input: Record<string, unknown>;
   analysisId?: string;
+  versionId?: string;
 }
 
 export interface TestAnalysisPromptResult {
@@ -465,21 +474,3 @@ export async function deleteVendorKey(vendor: Vendor): Promise<void> {
   });
 }
 
-export async function generateTyphoeusInterface(
-  analysisName: string,
-  jsonOutput: Record<string, unknown>
-): Promise<{ code: string }> {
-  return fetchApi<{ code: string }>('/api/v1/dev-tools/generate-interface', {
-    method: 'POST',
-    body: JSON.stringify({ analysisName, jsonOutput }),
-  });
-}
-
-export async function healthCheck(): Promise<{
-  status: string;
-  timestamp: string;
-  runtime: string;
-  version: string;
-}> {
-  return fetchApi('/api/health');
-}

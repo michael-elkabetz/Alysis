@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Loader2, Code2, Copy, Terminal, Key } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Loader2, Code2, Copy, Terminal, Key, Braces } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -8,8 +8,9 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { generateTyphoeusInterface } from '@/lib/api';
+import { getAnalysisLogs, type AnalysisInterfaces } from '@/lib/api';
 import { Separator } from '@/components/ui/separator';
+import { generateInterface, generateInterfaceFromStoredInterfaces } from '@/lib/type-generators';
 
 interface DevSpaceSheetProps {
   isOpen: boolean;
@@ -17,7 +18,9 @@ interface DevSpaceSheetProps {
   analysisName: string;
   analysisId: string;
   apiKey?: string;
+  interfaces?: AnalysisInterfaces | null;
   latestTestResult?: Record<string, unknown> | null;
+  sampleData?: string;
 }
 
 export function DevSpaceSheet({
@@ -26,34 +29,72 @@ export function DevSpaceSheet({
   analysisName,
   analysisId,
   apiKey,
+  interfaces,
   latestTestResult,
+  sampleData,
 }: DevSpaceSheetProps) {
-  const [generatedCode, setGeneratedCode] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [interfaceCode, setInterfaceCode] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const endpointUrl = `${window.location.origin}/api/v1/analyze/${analysisId}`;
 
-  const handleGenerate = async () => {
-    if (!latestTestResult) {
-      toast.error('Please run a test first to generate the interface based on the output.');
+  const generateCurl = () => {
+    const inputData = sampleData 
+      ? JSON.stringify({ input: { data: sampleData } })
+      : '{"input": {"data": "your data here"}}';
+    
+    return `curl -X POST "${endpointUrl}" \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${apiKey || 'YOUR_API_KEY'}" \\
+  -d '${inputData}'`;
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHasFetched(false);
       return;
     }
 
-    try {
-      setIsGenerating(true);
-      const { code } = await generateTyphoeusInterface(analysisName, latestTestResult);
-      setGeneratedCode(code);
-      toast.success('Interface generated successfully');
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setIsGenerating(false);
+    // Priority 1: Current session test result
+    if (latestTestResult && Object.keys(latestTestResult).length > 0) {
+      setInterfaceCode(generateInterface(analysisName, latestTestResult));
+      return;
     }
-  };
+
+    if (hasFetched) return;
+
+    const fetchFromLogs = async () => {
+      setIsLoading(true);
+      try {
+        const { logs } = await getAnalysisLogs(analysisId, 1, 0);
+        const successLog = logs.find(log => log.status === 'success' && log.output);
+        
+        // Priority 2: Latest execution log output
+        if (successLog?.output && Object.keys(successLog.output).length > 0) {
+          setInterfaceCode(generateInterface(analysisName, successLog.output));
+        } 
+        // Priority 3: Stored interfaces from prompt version
+        else if (interfaces) {
+          setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
+        }
+      } catch {
+        // Fallback to stored interfaces on error
+        if (interfaces) {
+          setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
+        }
+      } finally {
+        setIsLoading(false);
+        setHasFetched(true);
+      }
+    };
+
+    fetchFromLogs();
+  }, [isOpen, latestTestResult, analysisId, analysisName, hasFetched, interfaces]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
+    toast.success(`${label} copied`);
   };
 
   return (
@@ -72,13 +113,12 @@ export function DevSpaceSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-auto p-6 space-y-6">
-          {/* API Endpoint Section */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Code2 className="w-4 h-4" />
               API Endpoint
             </h3>
-            <div className="p-3 rounded-lg bg-secondary/30 border border-border/50">
+            <div className="editor-panel p-3">
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-sm font-mono text-foreground overflow-x-auto">
                   POST {endpointUrl}
@@ -97,25 +137,21 @@ export function DevSpaceSheet({
 
           <Separator />
 
-          {/* API Key Section */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Key className="w-4 h-4" />
               Authentication
             </h3>
-            <div className="p-3 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
-              <div className="text-sm text-muted-foreground">
-                Include the following header in your requests:
-              </div>
+            <div className="editor-panel p-3">
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-foreground">
-                  X-API-Key: YOUR_API_KEY
+                <code className="flex-1 text-sm font-mono text-foreground break-all">
+                  X-API-Key: {apiKey || 'YOUR_API_KEY'}
                 </code>
                 {apiKey && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => copyToClipboard(apiKey, 'API Key')}
+                    onClick={() => copyToClipboard(`X-API-Key: ${apiKey}`, 'API Key header')}
                     className="shrink-0 h-8 w-8"
                   >
                     <Copy className="w-4 h-4" />
@@ -127,54 +163,64 @@ export function DevSpaceSheet({
 
           <Separator />
 
-          {/* TypeScript Interface Section */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Code2 className="w-4 h-4" />
-                TypeScript Interface
-              </h3>
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || !latestTestResult}
-                size="sm"
-                className="gap-2"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Code2 className="w-4 h-4" />
-                    Generate
-                  </>
-                )}
-              </Button>
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Terminal className="w-4 h-4" />
+              cURL
+            </h3>
+            <div className="relative editor-panel max-h-[200px]">
+              <div className="absolute right-2 top-2 z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => copyToClipboard(generateCurl(), 'cURL command')}
+                  className="h-8 w-8 bg-background/50 hover:bg-background"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <pre className="p-3 overflow-auto text-xs font-mono text-foreground whitespace-pre-wrap break-all max-h-[200px]">
+                {generateCurl()}
+              </pre>
             </div>
+          </div>
 
-            {!latestTestResult && (
-              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-sm">
-                Run a test first to generate an interface based on the output structure.
+          <Separator />
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Braces className="w-4 h-4" />
+              Response Interface
+            </h3>
+
+            {isLoading && (
+              <div className="editor-panel p-4 flex items-center justify-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading...
               </div>
             )}
 
-            {generatedCode && (
-              <div className="relative rounded-lg overflow-hidden border border-border/50 bg-secondary/20">
+            {!isLoading && interfaceCode && (
+              <div className="relative editor-panel max-h-[230px]">
                 <div className="absolute right-2 top-2 z-10">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => copyToClipboard(generatedCode, 'Code')}
+                    onClick={() => copyToClipboard(interfaceCode, 'Interface')}
                     className="h-8 w-8 bg-background/50 hover:bg-background"
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
-                <pre className="p-4 overflow-x-auto text-sm font-mono text-foreground max-h-[400px] overflow-y-auto">
-                  {generatedCode}
+                <pre className="p-3 overflow-auto text-xs font-mono text-foreground max-h-[230px]">
+                  {interfaceCode}
                 </pre>
+              </div>
+            )}
+
+            {!isLoading && !interfaceCode && (
+              <div className="editor-panel p-3 text-muted-foreground text-sm">
+                Run a test to generate a TypeScript interface from the response.
               </div>
             )}
           </div>

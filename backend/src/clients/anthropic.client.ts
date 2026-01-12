@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AIClient, AIClientConfig } from './base'
 import { ClientError } from './base'
-import type { AIResponse, ClientModel } from '../shared'
-import { vendorKeyService } from '../domains/vendor-key'
+import type { AIResponse, ClientModel } from '../shared/types'
+import { vendorKeyService } from '../modules/vendor-key/vendorkey.service'
 
 const ANTHROPIC_MODELS: ClientModel[] = [
   { id: 'claude-opus-4-5-20251101', name: 'Claude Opus 4.5', contextWindow: 200000, maxOutput: 64000 },

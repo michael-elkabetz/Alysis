@@ -2,19 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Plus, Search, Settings } from 'lucide-react';
-import {
-  getAnalyses,
-  getAnalysisApiKeys,
-  deleteAnalysis,
-  regenerateApiKey,
-  type Analysis,
-} from '@/lib/api';
+import { getAnalyses, deleteAnalysis, type Analysis } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import logoImg from '@/assets/logo.png';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import BackgroundEffects from '@/layouts/BackgroundEffects';
-import { AppsGrid, CreateAnalysisDialog } from '@/features/analysis/components';
+import { AppsGrid } from '@/features/analysis/components/AppsGrid';
+import { CreateAnalysisDialog } from '@/features/analysis/components/CreateAnalysisDialog';
+import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/analysis/hooks/useAnalysisApiKey';
 import { toast } from 'sonner';
 
 export default function AnalysesList() {
@@ -42,10 +38,9 @@ export default function AnalysesList() {
   const handleCopyApiKey = async (e: React.MouseEvent, appId: string) => {
     e.stopPropagation();
     try {
-      const keys = await getAnalysisApiKeys(appId);
-      if (keys.length > 0) {
-        const result = await regenerateApiKey(keys[0].id);
-        navigator.clipboard.writeText(result.key);
+      const key = await fetchAndRegenerateApiKey(appId);
+      if (key) {
+        navigator.clipboard.writeText(key);
         toast.success('New API key generated and copied');
       } else {
         toast.error('No API key found');
@@ -58,13 +53,9 @@ export default function AnalysesList() {
   const handleCopyCurl = async (e: React.MouseEvent, appId: string) => {
     e.stopPropagation();
     try {
-      const keys = await getAnalysisApiKeys(appId);
-      if (keys.length > 0) {
-        const result = await regenerateApiKey(keys[0].id);
-        const curl = `curl -X POST "${window.location.origin}/api/v1/analyze/${appId}" \\
-  -H "Content-Type: application/json" \\
-  -H "X-API-Key: ${result.key}" \\
-  -d '{"input": {"data": "your data here"}}'`;
+      const key = await fetchAndRegenerateApiKey(appId);
+      if (key) {
+        const curl = generateCurlCommand(appId, key);
         navigator.clipboard.writeText(curl);
         toast.success('cURL with new API key copied');
       } else {

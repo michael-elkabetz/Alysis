@@ -9,8 +9,17 @@ export interface Analysis {
   description: string | null
   status: AnalysisStatus
   activeVersionId: string | null
+  sampleData: string | null
   createdAt: Date
   updatedAt: Date
+}
+
+export interface AnalysisInterfaces {
+  output: {
+    type: 'object'
+    properties: Record<string, { type: string; description?: string }>
+    required?: string[]
+  }
 }
 
 export interface PromptVersion {
@@ -18,6 +27,7 @@ export interface PromptVersion {
   analysisId: string
   version: number
   systemPrompt: string
+  interfaces: AnalysisInterfaces | null
   vendor: Vendor
   model: string
   temperature: number
@@ -67,20 +77,24 @@ export interface CreateAnalysisDto {
   name: string
   description?: string
   systemPrompt: string
+  interfaces?: AnalysisInterfaces
   vendor?: Vendor
   model?: string
   temperature?: number
   maxTokens?: number
   responseFormat?: ResponseFormat
+  sampleData?: string
 }
 
 export interface UpdateAnalysisDto {
   name?: string
   description?: string
+  sampleData?: string
 }
 
 export interface CreatePromptVersionDto {
   systemPrompt: string
+  interfaces?: AnalysisInterfaces
   vendor?: Vendor
   model?: string
   temperature?: number

@@ -285,6 +285,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "interfaces": {
+          "name": "interfaces",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "provider": {
           "name": "provider",
           "type": "provider",

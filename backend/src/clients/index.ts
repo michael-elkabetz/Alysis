@@ -2,7 +2,7 @@ import type { AIClient } from './base'
 import { OpenAIClient } from './openai.client'
 import { AnthropicClient } from './anthropic.client'
 import { GeminiClient } from './gemini.client'
-import type { Vendor, ClientInfo } from '../shared'
+import type { Vendor, ClientInfo } from '../shared/types'
 
 const clients: Record<Vendor, AIClient> = {
   openai: new OpenAIClient(),
@@ -37,11 +37,5 @@ export async function getAllClients(): Promise<ClientInfo[]> {
   return results
 }
 
-export async function getAvailableClients(): Promise<ClientInfo[]> {
-  const all = await getAllClients()
-  return all.filter((c) => c.available)
-}
-
-export { clients }
 export { ClientError } from './base'
 export type { AIClient, AIClientConfig } from './base'

@@ -3,15 +3,13 @@ import { swagger } from '@elysiajs/swagger'
 import { cors } from '@elysiajs/cors'
 import { staticPlugin } from '@elysiajs/static'
 
-import {
-  healthController,
-  analysisController,
-  promptController,
-  executionController,
-  apiKeyController,
-  vendorKeyController,
-} from './domains'
-import { devToolsController } from './domains/dev-tools/dev-tools.controller'
+import { healthController } from './modules/health/health.controller'
+import { analysisController } from './modules/analysis/analysis.controller'
+import { promptController } from './modules/prompt/prompt.controller'
+import { executionController } from './modules/execution/execution.controller'
+import { apiKeyController } from './modules/api-key/apikey.controller'
+import { vendorKeyController } from './modules/vendor-key/vendorkey.controller'
+import { devToolsController } from './modules/dev-tools/dev-tools.controller'
 import { clientController } from './clients/client.controller'
 
 const PORT = process.env.PORT ?? 3001

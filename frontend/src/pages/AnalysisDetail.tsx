@@ -15,26 +15,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import BackgroundEffects from '@/layouts/BackgroundEffects';
-import {
-  StatsGrid,
-  PromptEditor,
-  DeleteAppDialog,
-  DeleteVersionDialog,
-  VersionSelector,
-  ModelSelector,
-  InlineEditField,
-  AppActionsMenu,
-  VersionCostStats,
-  TestResultSheet,
-  DevSpaceSheet,
-  VersionCostKPI,
-} from '@/features/analysis/components';
-import {
-  useTestRunner,
-  usePromptEditor,
-  useInlineEdit,
-  useAnalysisApiKey,
-} from '@/features/analysis/hooks';
+import { StatsGrid } from '@/features/analysis/components/StatsGrid';
+import { PromptEditor } from '@/features/analysis/components/PromptEditor';
+import { DeleteAppDialog, DeleteVersionDialog } from '@/features/analysis/components/DeleteDialogs';
+import { VersionSelector } from '@/features/analysis/components/VersionSelector';
+import { ModelSelector } from '@/features/analysis/components/ModelSelector';
+import { InlineEditField } from '@/features/analysis/components/InlineEditField';
+import { AppActionsMenu } from '@/features/analysis/components/AppActionsMenu';
+import { VersionCostStats } from '@/features/analysis/components/VersionCostStats';
+import { TestResultSheet } from '@/features/analysis/components/TestResultSheet';
+import { DevSpaceSheet } from '@/features/analysis/components/DevSpaceSheet';
+import { useTestRunner } from '@/features/analysis/hooks/useTestRunner';
+import { usePromptEditor } from '@/features/analysis/hooks/usePromptEditor';
+import { useInlineEdit } from '@/features/analysis/hooks/useInlineEdit';
+import { useAnalysisApiKey } from '@/features/analysis/hooks/useAnalysisApiKey';
 
 export default function AnalysisDetail() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +40,7 @@ export default function AnalysisDetail() {
   const [isDeletingVersion, setIsDeletingVersion] = useState(false);
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
   const [isDevSpaceOpen, setIsDevSpaceOpen] = useState(false);
-  const [isDevSpaceCollapsed, setIsDevSpaceCollapsed] = useState(false);
+  const [isDevSpaceCollapsed, setIsDevSpaceCollapsed] = useState(true);
 
   const { data: analysis, isLoading: isLoadingAnalysis } = useQuery({
     queryKey: ['analysis', id],
@@ -63,15 +57,6 @@ export default function AnalysisDetail() {
   const { data: vendorsData } = useQuery({
     queryKey: ['vendors-models'],
     queryFn: getVendorsAndModels,
-  });
-
-  const { data: stats } = useQuery<AnalysisStats>({
-    queryKey: ['analysis-stats', id],
-    queryFn: () => getAnalysis(id!).then(() => 
-      import('@/lib/api').then(m => m.getAnalysisStats(id!))
-    ),
-    enabled: !!id,
-    refetchInterval: 30000,
   });
 
   const vendors = vendorsData?.vendors ?? [];
@@ -94,17 +79,31 @@ export default function AnalysisDetail() {
     modelsByVendor,
   });
 
+  const { data: stats } = useQuery<AnalysisStats>({
+    queryKey: ['analysis-stats', id, selectedVersionId],
+    queryFn: () => getAnalysis(id!).then(() => 
+      import('@/lib/api').then(m => m.getAnalysisStats(id!, selectedVersionId ?? undefined))
+    ),
+    enabled: !!id && !!selectedVersionId,
+    refetchInterval: 30000,
+  });
+
   const currentModels = modelsByVendor[promptState.vendor] ?? [];
 
   const {
-    testInput,
-    setTestInput,
+    sampleData,
+    setSampleData,
     testResult,
     isTesting,
+    testStatus,
     isResultPanelOpen,
     setIsResultPanelOpen,
     runTest,
-  } = useTestRunner({ analysisId: id });
+  } = useTestRunner({ 
+    analysisId: id, 
+    versionId: selectedVersionId,
+    initialSampleData: analysis?.sampleData,
+  });
 
   const nameEdit = useInlineEdit({
     analysisId: id!,
@@ -119,7 +118,7 @@ export default function AnalysisDetail() {
     initialValue: analysis?.description || '',
   });
 
-  const { copyApiKey, copyCurl, copyAppId } = useAnalysisApiKey({ analysisId: id! });
+  const { apiKey, copyApiKey, copyCurl, copyAppId } = useAnalysisApiKey({ analysisId: id! });
 
   const handleDelete = async () => {
     try {
@@ -220,10 +219,9 @@ export default function AnalysisDetail() {
           </Button>
         </nav>
 
-        {stats && <StatsGrid stats={stats} />}
-
-        <div className="mb-8">
-          <VersionCostStats analysisId={id!} />
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+          {stats && <StatsGrid stats={stats} />}
+          <VersionCostStats analysisId={id!} selectedVersionId={selectedVersionId} />
         </div>
 
         <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-6">
@@ -285,15 +283,11 @@ export default function AnalysisDetail() {
           </div>
         </header>
 
-        <div className="mb-6">
-          <VersionCostKPI analysisId={id!} selectedVersionId={selectedVersionId} />
-        </div>
-
         <PromptEditor
           systemPrompt={promptState.systemPrompt}
           onSystemPromptChange={updateSystemPrompt}
-          testInput={testInput}
-          onTestInputChange={setTestInput}
+          sampleData={sampleData}
+          onSampleDataChange={setSampleData}
         />
 
         <div className="flex items-center justify-between gap-3">
@@ -309,7 +303,7 @@ export default function AnalysisDetail() {
           <div className="flex items-center gap-3">
             <Button
               onClick={handleTest}
-              disabled={isTesting || !testInput.trim() || !promptState.systemPrompt.trim()}
+              disabled={isTesting || !sampleData.trim() || !promptState.systemPrompt.trim()}
               className="btn-secondary gap-2"
             >
               {isTesting ? (
@@ -349,6 +343,7 @@ export default function AnalysisDetail() {
         isOpen={isResultPanelOpen}
         onOpenChange={handleResultPanelClose}
         isLoading={isTesting}
+        testStatus={testStatus}
         result={testResult}
       />
 
@@ -357,7 +352,10 @@ export default function AnalysisDetail() {
         onOpenChange={handleDevSpaceClose}
         analysisName={analysis.name}
         analysisId={id!}
+        apiKey={apiKey || undefined}
+        interfaces={versions.find(v => v.id === selectedVersionId)?.interfaces}
         latestTestResult={testResult?.output}
+        sampleData={sampleData}
       />
 
       {isResultCollapsed && testResult && (

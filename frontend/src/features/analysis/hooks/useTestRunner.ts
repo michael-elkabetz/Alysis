@@ -1,7 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { testAnalysisPrompt, type Vendor } from '@/lib/api';
+import { testAnalysisPrompt, updatePromptInterfaces, updateAnalysis, type Vendor } from '@/lib/api';
+import { formatLatency } from '@/lib/utils';
+import { generateInterfacesFromOutput } from '@/lib/type-generators';
+
+export { generateInterfacesFromOutput };
 
 interface TestResult {
   output: Record<string, unknown>;
@@ -18,15 +22,20 @@ interface PromptConfig {
 
 interface UseTestRunnerOptions {
   analysisId?: string;
+  versionId?: string | null;
+  initialSampleData?: string | null;
   onSuccess?: (result: TestResult) => void;
   onError?: (error: Error) => void;
 }
 
+export type TestStatus = 'idle' | 'running' | 'generating_interfaces';
+
 interface UseTestRunnerReturn {
-  testInput: string;
-  setTestInput: (input: string) => void;
+  sampleData: string;
+  setSampleData: (input: string) => void;
   testResult: TestResult | null;
   isTesting: boolean;
+  testStatus: TestStatus;
   isResultPanelOpen: boolean;
   setIsResultPanelOpen: (open: boolean) => void;
   runTest: (config: PromptConfig) => Promise<void>;
@@ -34,17 +43,24 @@ interface UseTestRunnerReturn {
 }
 
 export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunnerReturn {
-  const { analysisId, onSuccess, onError } = options;
+  const { analysisId, versionId, initialSampleData, onSuccess, onError } = options;
   const queryClient = useQueryClient();
 
-  const [testInput, setTestInput] = useState('');
+  const [sampleData, setSampleData] = useState(initialSampleData || '');
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
   const [isResultPanelOpen, setIsResultPanelOpen] = useState(false);
 
+  useEffect(() => {
+    if (initialSampleData && !sampleData) {
+      setSampleData(initialSampleData);
+    }
+  }, [initialSampleData, sampleData]);
+
   const runTest = useCallback(async (config: PromptConfig) => {
-    if (!testInput.trim()) {
-      toast.error('Please enter test input');
+    if (!sampleData.trim()) {
+      toast.error('Please enter sample data');
       return;
     }
 
@@ -55,6 +71,7 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
 
     try {
       setIsTesting(true);
+      setTestStatus('running');
       setTestResult(null);
       setIsResultPanelOpen(true);
 
@@ -62,16 +79,33 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
         systemPrompt: config.systemPrompt,
         vendor: config.vendor,
         model: config.model,
-        input: { data: testInput },
+        input: { data: sampleData },
         analysisId,
+        versionId: versionId || undefined,
       });
 
       setTestResult(result);
-      toast.success(`Test completed in ${result.latencyMs}ms`);
+      toast.success(`Test completed in ${formatLatency(result.latencyMs)}`);
       onSuccess?.(result);
+
+      if (analysisId && versionId && result.output) {
+        setTestStatus('generating_interfaces');
+        const interfaces = generateInterfacesFromOutput(result.output);
+        await updatePromptInterfaces(analysisId, versionId, interfaces);
+        queryClient.invalidateQueries({ queryKey: ['prompts', analysisId] });
+      }
+
+      if (analysisId && sampleData.trim()) {
+        updateAnalysis(analysisId, { sampleData })
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] });
+          })
+          .catch(() => {});
+      }
 
       if (analysisId) {
         void queryClient.invalidateQueries({ queryKey: ['analysis-stats', analysisId] });
+        void queryClient.invalidateQueries({ queryKey: ['version-cost-stats', analysisId] });
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Test failed');
@@ -80,8 +114,9 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
       onError?.(err);
     } finally {
       setIsTesting(false);
+      setTestStatus('idle');
     }
-  }, [testInput, analysisId, queryClient, onSuccess, onError]);
+  }, [sampleData, analysisId, versionId, queryClient, onSuccess, onError]);
 
   const clearResult = useCallback(() => {
     setTestResult(null);
@@ -89,10 +124,11 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
   }, []);
 
   return {
-    testInput,
-    setTestInput,
+    sampleData,
+    setSampleData,
     testResult,
     isTesting,
+    testStatus,
     isResultPanelOpen,
     setIsResultPanelOpen,
     runTest,

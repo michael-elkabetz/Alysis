@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
 import type { AIClient, AIClientConfig } from './base'
 import { ClientError } from './base'
-import type { AIResponse, ClientModel } from '../shared'
-import { vendorKeyService } from '../domains/vendor-key'
+import type { AIResponse, ClientModel } from '../shared/types'
+import { vendorKeyService } from '../modules/vendor-key/vendorkey.service'
 
 const GEMINI_MODELS: ClientModel[] = [
   { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', contextWindow: 1000000, maxOutput: 64000 },

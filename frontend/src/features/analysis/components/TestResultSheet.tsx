@@ -15,17 +15,27 @@ interface TestResult {
   tokenUsage: { prompt: number; completion: number; total: number };
 }
 
+type TestStatus = 'idle' | 'running' | 'generating_interfaces';
+
 interface TestResultSheetProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   isLoading: boolean;
+  testStatus?: TestStatus;
   result: TestResult | null;
 }
+
+const STATUS_TEXT: Record<TestStatus, string> = {
+  idle: '',
+  running: 'Running test...',
+  generating_interfaces: 'Generating response interfaces...',
+};
 
 export function TestResultSheet({
   isOpen,
   onOpenChange,
   isLoading,
+  testStatus = 'running',
   result,
 }: TestResultSheetProps) {
   return (
@@ -58,7 +68,7 @@ export function TestResultSheet({
           {isLoading ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              Running test...
+              {STATUS_TEXT[testStatus] || 'Running test...'}
             </div>
           ) : result ? (
             <div className="editor-panel p-4 h-full overflow-auto">

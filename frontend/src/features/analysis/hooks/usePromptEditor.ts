@@ -30,6 +30,7 @@ interface UsePromptEditorReturn {
   latestVersion: PromptVersion | undefined;
   isViewingOldVersion: boolean;
   isSaving: boolean;
+  hasUnsavedChanges: boolean;
   handleSelectVersion: (version: PromptVersion) => void;
   handleSave: () => Promise<void>;
   updateVendor: (vendor: string) => void;
@@ -102,6 +103,17 @@ export function usePromptEditor({
     });
   }, []);
 
+  const hasChanges = useCallback((): boolean => {
+    if (!latestVersion) return true;
+    
+    const currentPrompt = promptState.systemPrompt.trim();
+    const currentModel = promptState.model;
+    const latestPrompt = latestVersion.systemPrompt.trim();
+    const latestModel = latestVersion.model;
+    
+    return currentPrompt !== latestPrompt || currentModel !== latestModel;
+  }, [promptState.systemPrompt, promptState.model, latestVersion]);
+
   const handleSave = useCallback(async () => {
     try {
       setIsSaving(true);
@@ -112,6 +124,11 @@ export function usePromptEditor({
         queryClient.invalidateQueries({ queryKey: ['prompts', analysisId] });
         toast.success('Version activated');
       } else {
+        if (!hasChanges()) {
+          toast.info('No changes to save');
+          return;
+        }
+        
         const newVersion = await createPromptVersion(analysisId, {
           systemPrompt: promptState.systemPrompt,
           vendor: promptState.vendor as Vendor,
@@ -127,7 +144,7 @@ export function usePromptEditor({
     } finally {
       setIsSaving(false);
     }
-  }, [analysisId, isViewingOldVersion, selectedVersionId, promptState, queryClient]);
+  }, [analysisId, isViewingOldVersion, selectedVersionId, promptState, queryClient, hasChanges]);
 
   const updateVendor = useCallback((vendor: string) => {
     setPromptState(prev => ({ ...prev, vendor }));
@@ -141,6 +158,8 @@ export function usePromptEditor({
     setPromptState(prev => ({ ...prev, systemPrompt }));
   }, []);
 
+  const hasUnsavedChanges = hasChanges();
+
   return {
     promptState,
     setPromptState,
@@ -149,6 +168,7 @@ export function usePromptEditor({
     latestVersion,
     isViewingOldVersion,
     isSaving,
+    hasUnsavedChanges,
     handleSelectVersion,
     handleSave,
     updateVendor,

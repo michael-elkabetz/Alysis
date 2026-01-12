@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Play,
@@ -8,14 +8,12 @@ import {
   Copy,
   Sparkles,
   ChevronRight,
-  FlaskConical,
-  Zap,
-  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import {
   getVendorsAndModels,
+  getVendorKeyStatuses,
   createAnalysis,
-  testAnalysisPrompt,
   type CreateAnalysisDto,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -36,14 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { TestResultSheet } from './TestResultSheet';
+import { useTestRunner, generateInterfacesFromOutput } from '../hooks/useTestRunner';
 
 interface CreateAppDialogProps {
   open: boolean;
@@ -61,57 +55,84 @@ export function CreateAppDialog({
     name: '',
     description: '',
     systemPrompt: '',
-    vendor: 'openai',
-    model: 'gpt-4o',
+    vendor: '',
+    model: '',
   });
-  const [testInput, setTestInput] = useState('');
-  const [testResult, setTestResult] = useState<{
-    output: Record<string, unknown>;
-    rawResponse: string;
-    latencyMs: number;
-    tokenUsage: { prompt: number; completion: number; total: number };
-  } | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
-  const [showResultPanel, setShowResultPanel] = useState(false);
   const [savedAnalysis, setSavedAnalysis] = useState<{
     id: string;
     name: string;
     apiKey: { key: string };
+    testOutput?: Record<string, unknown>;
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
+
+  const {
+    sampleData,
+    setSampleData,
+    testResult,
+    isTesting,
+    testStatus,
+    isResultPanelOpen,
+    setIsResultPanelOpen,
+    runTest,
+    clearResult,
+  } = useTestRunner();
 
   const { data: vendorsData } = useQuery({
     queryKey: ['vendors-models'],
     queryFn: getVendorsAndModels,
   });
 
+  const { data: vendorKeyStatuses } = useQuery({
+    queryKey: ['vendor-key-statuses'],
+    queryFn: getVendorKeyStatuses,
+  });
+
   const vendors = vendorsData?.vendors ?? [];
   const modelsByVendor = vendorsData?.modelsByVendor ?? {};
 
+  const configuredVendor = useMemo(() => {
+    if (!vendorKeyStatuses || !vendors.length) return null;
+    const configured = vendorKeyStatuses.find((v) => v.configured);
+    if (!configured) return null;
+    const vendor = vendors.find((v) => v.id === configured.vendor);
+    return vendor || null;
+  }, [vendorKeyStatuses, vendors]);
+
+  const hasConfiguredVendor = configuredVendor !== null;
+
+  useEffect(() => {
+    if (!configuredVendor || !modelsByVendor[configuredVendor.id]) return;
+    
+    setFormData((prev) => {
+      if (prev.vendor && prev.vendor !== '' && vendors.some((v) => v.id === prev.vendor)) {
+        return prev;
+      }
+      const models = modelsByVendor[configuredVendor.id];
+      return {
+        ...prev,
+        vendor: configuredVendor.id,
+        model: models?.[0]?.id || '',
+      };
+    });
+  }, [configuredVendor, modelsByVendor, vendors]);
+
   useEffect(() => {
     const vendorModels = modelsByVendor[formData.vendor];
-    if (vendorModels && vendorModels.length > 0) {
+    if (vendorModels && vendorModels.length > 0 && !vendorModels.some((m) => m.id === formData.model)) {
       setFormData((prev) => ({ ...prev, model: vendorModels[0].id }));
     }
-  }, [formData.vendor, modelsByVendor]);
+  }, [formData.vendor, formData.model, modelsByVendor]);
 
   const createMutation = useMutation({
-    mutationFn: () => {
-      const dto: CreateAnalysisDto = {
-        name: formData.name,
-        description: formData.description || undefined,
-        systemPrompt: formData.systemPrompt,
-        vendor: formData.vendor as 'openai' | 'anthropic' | 'gemini',
-        model: formData.model,
-      };
-      return createAnalysis(dto);
-    },
-    onSuccess: (response) => {
+    mutationFn: (dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown> }) => createAnalysis(dto),
+    onSuccess: (response, variables) => {
       setSavedAnalysis({
         id: response.id,
         name: response.name,
         apiKey: response.apiKey,
+        testOutput: variables._testOutput,
       });
       toast.success('App created successfully');
     },
@@ -120,32 +141,12 @@ export function CreateAppDialog({
     },
   });
 
-  const handleTest = async () => {
-    if (!testInput.trim()) {
-      toast.error('Please enter test data');
-      return;
-    }
-
-    try {
-      setIsTesting(true);
-      setTestResult(null);
-      setShowResultPanel(true);
-
-      const result = await testAnalysisPrompt({
-        systemPrompt: formData.systemPrompt,
-        vendor: formData.vendor as 'openai' | 'anthropic' | 'gemini',
-        model: formData.model,
-        input: { data: testInput },
-      });
-
-      setTestResult(result);
-      toast.success(`Test completed in ${result.latencyMs}ms`);
-    } catch (e) {
-      toast.error((e as Error).message);
-      setShowResultPanel(false);
-    } finally {
-      setIsTesting(false);
-    }
+  const handleTest = () => {
+    runTest({
+      systemPrompt: formData.systemPrompt,
+      vendor: formData.vendor as 'openai' | 'anthropic' | 'gemini',
+      model: formData.model,
+    });
   };
 
   const handleSave = () => {
@@ -157,7 +158,18 @@ export function CreateAppDialog({
       toast.error('Please enter analysis instructions');
       return;
     }
-    createMutation.mutate();
+    const generatedInterfaces = testResult?.output ? generateInterfacesFromOutput(testResult.output) : undefined;
+    const dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown> } = {
+      name: formData.name,
+      description: formData.description || undefined,
+      systemPrompt: formData.systemPrompt,
+      interfaces: generatedInterfaces,
+      vendor: formData.vendor as 'openai' | 'anthropic' | 'gemini',
+      model: formData.model,
+      sampleData: sampleData || undefined,
+      _testOutput: testResult?.output,
+    };
+    createMutation.mutate(dto);
   };
 
   const copyApiKey = () => {
@@ -193,12 +205,11 @@ export function CreateAppDialog({
       name: '',
       description: '',
       systemPrompt: '',
-      vendor: 'openai',
-      model: 'gpt-4o',
+      vendor: configuredVendor?.id || '',
+      model: configuredVendor ? (modelsByVendor[configuredVendor.id]?.[0]?.id || '') : '',
     });
-    setTestInput('');
-    setTestResult(null);
-    setShowResultPanel(false);
+    setSampleData('');
+    clearResult();
     setSavedAnalysis(null);
     setCopied(false);
     setCopiedEndpoint(false);
@@ -285,6 +296,7 @@ export function CreateAppDialog({
 {generateCurl()}
               </pre>
             </div>
+
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -318,15 +330,15 @@ export function CreateAppDialog({
         <div className="flex items-center gap-2 px-6 py-4 bg-secondary/30">
           {steps.map((s, i) => (
             <div key={s.id} className="flex items-center">
-              <button
+                <button
                 onClick={() => {
                   if (i === 0) setStep('configure');
-                  else if (i === 1 && formData.name) setStep('prompt');
-                  else if (i === 2 && formData.name && formData.systemPrompt) setStep('test');
+                  else if (i === 1 && formData.name && formData.vendor && formData.model) setStep('prompt');
+                  else if (i === 2 && formData.name && formData.vendor && formData.model && formData.systemPrompt) setStep('test');
                 }}
                 disabled={
-                  (i === 1 && !formData.name) ||
-                  (i === 2 && (!formData.name || !formData.systemPrompt)) ||
+                  (i === 1 && (!formData.name || !formData.vendor || !formData.model)) ||
+                  (i === 2 && (!formData.name || !formData.vendor || !formData.model || !formData.systemPrompt)) ||
                   i === 3
                 }
                 className={cn(
@@ -388,12 +400,15 @@ export function CreateAppDialog({
                   <Select
                     value={formData.vendor}
                     onValueChange={(v) => setFormData({ ...formData, vendor: v })}
+                    disabled={!hasConfiguredVendor}
                   >
                     <SelectTrigger className="input-modern !bg-[#f5f0e8]">
-                      <SelectValue />
+                      <SelectValue placeholder={hasConfiguredVendor ? "Select provider" : "No vendor configured"} />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      {vendors.map((vendor) => (
+                      {vendors.filter((vendor) => 
+                        vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
+                      ).map((vendor) => (
                         <SelectItem key={vendor.id} value={vendor.id} className="focus:bg-secondary">
                           {vendor.displayName}
                         </SelectItem>
@@ -406,9 +421,10 @@ export function CreateAppDialog({
                   <Select
                     value={formData.model}
                     onValueChange={(v) => setFormData({ ...formData, model: v })}
+                    disabled={!hasConfiguredVendor || !formData.vendor}
                   >
                     <SelectTrigger className="input-modern !bg-[#f5f0e8]">
-                      <SelectValue />
+                      <SelectValue placeholder={hasConfiguredVendor ? "Select model" : "No model available"} />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
                       {currentModels.map((model) => (
@@ -420,6 +436,13 @@ export function CreateAppDialog({
                   </Select>
                 </div>
               </div>
+
+              {!hasConfiguredVendor && vendorKeyStatuses && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>No vendor configured. Please add an API key in settings.</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -438,13 +461,13 @@ export function CreateAppDialog({
 
           {step === 'test' && (
             <div className="h-full flex flex-col">
-              <Label htmlFor="testInput" className="text-sm mb-2">Test Input</Label>
+              <Label htmlFor="sampleData" className="text-sm mb-2">Sample Data</Label>
               <Textarea
-                id="testInput"
+                id="sampleData"
                 className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0e8] !border-0"
-                placeholder="Paste or type your test data..."
-                value={testInput}
-                onChange={(e) => setTestInput(e.target.value)}
+                placeholder="Paste or type your sample data..."
+                value={sampleData}
+                onChange={(e) => setSampleData(e.target.value)}
               />
             </div>
           )}
@@ -459,7 +482,7 @@ export function CreateAppDialog({
             {step === 'configure' && (
               <Button
                 onClick={() => setStep('prompt')}
-                disabled={!formData.name}
+                disabled={!formData.name || !formData.vendor || !formData.model}
                 className="btn-primary"
               >
                 Continue
@@ -499,7 +522,7 @@ export function CreateAppDialog({
               <>
                 <Button
                   onClick={handleTest}
-                  disabled={isTesting || !testInput}
+                  disabled={isTesting || !sampleData}
                   className="btn-secondary"
                 >
                   {isTesting ? (
@@ -537,69 +560,13 @@ export function CreateAppDialog({
         </div>
       </DialogContent>
 
-      <Sheet open={showResultPanel} onOpenChange={setShowResultPanel}>
-        <SheetContent side="right" className="w-[500px] sm:max-w-[500px] bg-card border-border p-0 flex flex-col">
-          <SheetHeader className="px-6 pt-4 pb-3 border-b border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-primary/10">
-                  <FlaskConical className="w-4 h-4 text-primary" />
-                </div>
-                <SheetTitle className="text-lg">Test Result</SheetTitle>
-                {testResult && (
-                  <div className="flex items-center gap-1.5 ml-2">
-                    {testResult.latencyMs < 1000 ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <Zap className="w-3 h-3" />
-                        {testResult.latencyMs}ms
-                      </span>
-                    ) : testResult.latencyMs < 3000 ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <Clock className="w-3 h-3" />
-                        {(testResult.latencyMs / 1000).toFixed(1)}s
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                        <Clock className="w-3 h-3" />
-                        {(testResult.latencyMs / 1000).toFixed(1)}s
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            {testResult && (
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="text-muted-foreground/60">Tokens:</span>
-                  <span className="font-medium text-foreground">{testResult.tokenUsage.total.toLocaleString()}</span>
-                  <span className="text-muted-foreground/40">({testResult.tokenUsage.prompt} in / {testResult.tokenUsage.completion} out)</span>
-                </div>
-              </div>
-            )}
-          </SheetHeader>
-          <div className="flex-1 overflow-auto p-6">
-            {isTesting ? (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Running test...
-              </div>
-            ) : testResult ? (
-              <div className="editor-panel p-4 h-full overflow-auto">
-                <pre className="text-sm font-mono text-foreground whitespace-pre-wrap break-words overflow-y-auto">
-                  {typeof testResult.output === 'object'
-                    ? JSON.stringify(testResult.output, null, 2)
-                    : testResult.rawResponse}
-                </pre>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground/50">
-                No result yet
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <TestResultSheet
+        isOpen={isResultPanelOpen}
+        onOpenChange={setIsResultPanelOpen}
+        isLoading={isTesting}
+        testStatus={testStatus}
+        result={testResult}
+      />
     </Dialog>
   );
 }

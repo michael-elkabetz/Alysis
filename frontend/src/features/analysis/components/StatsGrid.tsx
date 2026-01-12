@@ -6,6 +6,7 @@ import {
   Coins,
 } from 'lucide-react';
 import type { AnalysisStats } from '@/lib/api';
+import { formatLatency } from '@/lib/utils';
 
 interface StatsGridProps {
   stats: AnalysisStats;
@@ -17,9 +18,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
     : '—';
 
   const avgLatency = stats.avgLatencyMs > 0
-    ? stats.avgLatencyMs < 1000
-      ? `${Math.round(stats.avgLatencyMs)}ms`
-      : `${(stats.avgLatencyMs / 1000).toFixed(1)}s`
+    ? formatLatency(Math.round(stats.avgLatencyMs))
     : '—';
 
   const totalTokens = stats.totalTokens > 1000000
@@ -29,7 +28,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       : stats.totalTokens.toLocaleString();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <>
       <div className="stat-card rounded-xl border border-border/50">
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="w-4 h-4 text-primary" />
@@ -73,6 +72,6 @@ export function StatsGrid({ stats }: StatsGridProps) {
         </div>
         <p className="text-xl font-semibold text-foreground">{totalTokens}</p>
       </div>
-    </div>
+    </>
   );
 }

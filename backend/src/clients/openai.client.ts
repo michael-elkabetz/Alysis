@@ -1,8 +1,8 @@
 import OpenAI from 'openai'
 import type { AIClient, AIClientConfig } from './base'
 import { ClientError } from './base'
-import type { AIResponse, ClientModel } from '../shared'
-import { vendorKeyService } from '../domains/vendor-key'
+import type { AIResponse, ClientModel } from '../shared/types'
+import { vendorKeyService } from '../modules/vendor-key/vendorkey.service'
 
 const OPENAI_MODELS: ClientModel[] = [
   { id: 'gpt-5.2', name: 'GPT 5.2', contextWindow: 400000, maxOutput: 128000 },

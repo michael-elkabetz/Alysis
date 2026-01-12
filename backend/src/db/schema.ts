@@ -11,6 +11,7 @@ export const analyses = pgTable('analyses', {
   description: text('description'),
   status: analysisStatusEnum('status').notNull().default('draft'),
   activeVersionId: text('active_version_id'),
+  sampleData: text('sample_data'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -20,6 +21,7 @@ export const promptVersions = pgTable('prompt_versions', {
   analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
   version: integer('version').notNull(),
   systemPrompt: text('system_prompt').notNull(),
+  interfaces: jsonb('interfaces'),
   provider: providerEnum('provider').notNull().default('openai'),
   model: text('model').notNull().default('gpt-5.2'),
   temperature: real('temperature').notNull().default(0.7),
