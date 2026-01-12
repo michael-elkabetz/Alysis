@@ -109,7 +109,7 @@ export function DevSpaceSheet({
               </div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-sm font-mono text-foreground">
-                  X-API-Key: {apiKey ? apiKey.slice(0, 20) + '...' : 'YOUR_API_KEY'}
+                  X-API-Key: YOUR_API_KEY
                 </code>
                 {apiKey && (
                   <Button

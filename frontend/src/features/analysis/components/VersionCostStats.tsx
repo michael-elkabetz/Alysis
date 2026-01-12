@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { DollarSign, TrendingUp, Coins, Zap } from 'lucide-react';
+import { DollarSign, TrendingUp, Zap, Coins } from 'lucide-react';
 import { getVersionCostStats } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -124,9 +124,8 @@ export function VersionCostStats({ analysisId }: VersionCostStatsProps) {
                 <TableHead className="font-semibold">Version</TableHead>
                 <TableHead className="font-semibold">Model</TableHead>
                 <TableHead className="text-right font-semibold">Executions</TableHead>
-                <TableHead className="text-right font-semibold">Tokens</TableHead>
-                <TableHead className="text-right font-semibold">Input Cost</TableHead>
-                <TableHead className="text-right font-semibold">Output Cost</TableHead>
+                <TableHead className="text-right font-semibold">Total Tokens</TableHead>
+                <TableHead className="text-right font-semibold">Avg Tokens</TableHead>
                 <TableHead className="text-right font-semibold">Total Cost</TableHead>
                 <TableHead className="text-right font-semibold">Avg/Exec</TableHead>
               </TableRow>
@@ -162,10 +161,7 @@ export function VersionCostStats({ analysisId }: VersionCostStatsProps) {
                     {formatNumber(stat.totalTokens)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
-                    {formatCurrency(stat.totalInputCost)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
-                    {formatCurrency(stat.totalOutputCost)}
+                    {formatNumber(Math.round(stat.avgTokensPerExecution))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums font-semibold text-primary">
                     {formatCurrency(stat.totalCost)}
