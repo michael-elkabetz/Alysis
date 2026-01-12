@@ -1,45 +1,43 @@
 import { getClient } from '../../clients'
-import { DEFAULTS } from '../../shared'
 
 export const devToolsService = {
   async generateTyphoeusInterface(
     analysisName: string,
     jsonOutput: Record<string, unknown>
   ): Promise<string> {
-    const client = getClient('openai') // We use OpenAI for code generation by default
+    const client = getClient('openai')
     
     const prompt = `
-You are an expert Ruby developer. Your task is to generate a Ruby client wrapper for an API endpoint using the 'typhoeus' gem.
+You are an expert TypeScript developer. Your task is to generate TypeScript interface definitions based on a JSON structure.
 
 Context:
-- App Name: ${analysisName}
-- The API returns a JSON response.
-- Below is an EXAMPLE of the JSON output structure from this API.
+- The JSON below represents the output structure from an API.
+- Generate clean, well-typed TypeScript interfaces.
 
 Task:
-- Create a Ruby class named \`${analysisName.replace(/[^a-zA-Z0-9]/g, '')}Client\`.
-- It should have a method to call the API.
-- It should use 'typhoeus' for the HTTP request.
-- It should parse the response and return a structured object (using Struct or OpenStruct) that matches the JSON structure provided below.
-- Include comments explaining usage.
+- Analyze the JSON structure below
+- Generate TypeScript interface(s) that accurately represent this data
+- Use proper naming conventions (PascalCase for interfaces)
+- Include nested interfaces if needed
+- Add JSDoc comments for clarity
 
 Example JSON Output:
 ${JSON.stringify(jsonOutput, null, 2)}
 
-Generate ONLY the Ruby code. Do not include markdown formatting like \`\`\`ruby.
+Generate ONLY the TypeScript interface code. Do not include markdown code fences or explanations.
 `
 
     const response = await client.complete(
       prompt,
-      '', // No user message needed, everything is in system prompt/context
+      '',
       {
-        model: 'gpt-4o', // Use a strong model for code generation
-        temperature: 0.2, // Low temperature for deterministic code
+        model: 'gpt-4o',
+        temperature: 0.2,
         maxTokens: 2000,
         responseFormat: 'text'
       }
     )
 
-    return response.content.replace(/```ruby/g, '').replace(/```/g, '').trim()
+    return response.content.replace(/```typescript/g, '').replace(/```ts/g, '').replace(/```/g, '').trim()
   }
 }

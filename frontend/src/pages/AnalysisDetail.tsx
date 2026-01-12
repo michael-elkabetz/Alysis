@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Save, Play, Activity, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Play, Activity, Loader2, Terminal } from 'lucide-react';
 import {
   getAnalysis,
   getPromptVersions,
@@ -27,7 +26,8 @@ import {
   AppActionsMenu,
   VersionCostStats,
   TestResultSheet,
-  DevSpace,
+  DevSpaceSheet,
+  VersionCostKPI,
 } from '@/features/analysis/components';
 import {
   useTestRunner,
@@ -45,6 +45,8 @@ export default function AnalysisDetail() {
   const [versionToDelete, setVersionToDelete] = useState<PromptVersion | null>(null);
   const [isDeletingVersion, setIsDeletingVersion] = useState(false);
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
+  const [isDevSpaceOpen, setIsDevSpaceOpen] = useState(false);
+  const [isDevSpaceCollapsed, setIsDevSpaceCollapsed] = useState(false);
 
   const { data: analysis, isLoading: isLoadingAnalysis } = useQuery({
     queryKey: ['analysis', id],
@@ -166,6 +168,18 @@ export default function AnalysisDetail() {
     setIsResultCollapsed(false);
   };
 
+  const handleDevSpaceClose = (open: boolean) => {
+    if (!open) {
+      setIsDevSpaceCollapsed(true);
+    }
+    setIsDevSpaceOpen(open);
+  };
+
+  const handleExpandDevSpace = () => {
+    setIsDevSpaceOpen(true);
+    setIsDevSpaceCollapsed(false);
+  };
+
   if (isLoadingAnalysis) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -212,7 +226,7 @@ export default function AnalysisDetail() {
           <VersionCostStats analysisId={id!} />
         </div>
 
-        <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
+        <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-6">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <InlineEditField
@@ -271,67 +285,64 @@ export default function AnalysisDetail() {
           </div>
         </header>
 
-        <Tabs defaultValue="editor" className="w-full">
-          <TabsList className="mb-6 w-full max-w-[400px] grid grid-cols-2">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="dev-space">Dev Space</TabsTrigger>
-          </TabsList>
+        <div className="mb-6">
+          <VersionCostKPI analysisId={id!} selectedVersionId={selectedVersionId} />
+        </div>
 
-          <TabsContent value="editor">
-            <PromptEditor
-              systemPrompt={promptState.systemPrompt}
-              onSystemPromptChange={updateSystemPrompt}
-              testInput={testInput}
-              onTestInputChange={setTestInput}
-            />
+        <PromptEditor
+          systemPrompt={promptState.systemPrompt}
+          onSystemPromptChange={updateSystemPrompt}
+          testInput={testInput}
+          onTestInputChange={setTestInput}
+        />
 
-            <div className="flex items-center justify-end gap-3">
-              <Button
-                onClick={handleTest}
-                disabled={isTesting || !testInput.trim() || !promptState.systemPrompt.trim()}
-                className="btn-secondary gap-2"
-              >
-                {isTesting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    Test
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving || !promptState.systemPrompt.trim()}
-                className="btn-primary gap-2"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            onClick={() => setIsDevSpaceOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Terminal className="w-4 h-4" />
+            Developer Space
+          </Button>
 
-          <TabsContent value="dev-space">
-            <DevSpace
-              analysisName={analysis.name}
-              analysisId={id!}
-              latestTestResult={testResult?.output}
-            />
-          </TabsContent>
-        </Tabs>
-
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleTest}
+              disabled={isTesting || !testInput.trim() || !promptState.systemPrompt.trim()}
+              className="btn-secondary gap-2"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Test
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !promptState.systemPrompt.trim()}
+              className="btn-primary gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <TestResultSheet
@@ -339,6 +350,14 @@ export default function AnalysisDetail() {
         onOpenChange={handleResultPanelClose}
         isLoading={isTesting}
         result={testResult}
+      />
+
+      <DevSpaceSheet
+        isOpen={isDevSpaceOpen}
+        onOpenChange={handleDevSpaceClose}
+        analysisName={analysis.name}
+        analysisId={id!}
+        latestTestResult={testResult?.output}
       />
 
       {isResultCollapsed && testResult && (
@@ -349,6 +368,17 @@ export default function AnalysisDetail() {
         >
           <Activity className="w-4 h-4" />
           <span className="text-xs font-medium writing-mode-vertical">Result</span>
+        </button>
+      )}
+
+      {isDevSpaceCollapsed && (
+        <button
+          onClick={handleExpandDevSpace}
+          className="fixed right-0 top-1/3 -translate-y-1/2 z-40 bg-secondary hover:bg-secondary/90 text-foreground px-3 py-4 rounded-l-lg shadow-lg transition-all hover:pr-5 flex flex-col items-center gap-1"
+          aria-label="Expand dev space"
+        >
+          <Terminal className="w-4 h-4" />
+          <span className="text-xs font-medium writing-mode-vertical">Dev</span>
         </button>
       )}
 

@@ -12,4 +12,5 @@ export { LatencyBadge } from './LatencyBadge';
 export { TokenUsageDisplay } from './TokenUsageDisplay';
 export { TestResultSheet } from './TestResultSheet';
 export { CreateAnalysisDialog } from './CreateAnalysisDialog';
-export { DevSpace } from './DevSpace';
+export { DevSpaceSheet } from './DevSpaceSheet';
+export { VersionCostKPI } from './VersionCostKPI';
