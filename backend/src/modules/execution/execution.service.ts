@@ -4,9 +4,9 @@ import { analysisRepository } from '../analysis/analysis.repository'
 import { promptService } from '../prompt/prompt.service'
 import { apiKeyService } from '../api-key/apikey.service'
 import { getClient, inferVendor } from '../../clients'
-import { getModelPricing } from '../../config'
-import { DEFAULTS, ID_PREFIXES, ERROR_TYPES } from '../../shared'
-import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor, VersionCostStats, ErrorType } from '../../shared'
+import { getModelPricing } from '../../config/model-pricing'
+import { DEFAULTS, ID_PREFIXES, ERROR_TYPES } from '../../shared/constants'
+import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor, VersionCostStats, ErrorType } from '../../shared/types'
 
 type ExecuteWithAuthResult = {
   success: true
@@ -119,7 +119,7 @@ export const executionService = {
     return this.executeWithPrompt(analysisId, promptId, promptVersion, input, callerService)
   },
 
-  async testDirect(dto: TestPromptDto, analysisId?: string): Promise<{
+  async testDirect(dto: TestPromptDto, analysisId?: string, versionId?: string): Promise<{
     output: Record<string, unknown> | null
     rawResponse: string
     latencyMs: number
@@ -148,6 +148,7 @@ export const executionService = {
       if (analysisId) {
         await this.log({
           analysisId,
+          versionId: versionId || null,
           status: 'success',
           input: dto.input,
           output,
@@ -164,7 +165,7 @@ export const executionService = {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
       if (analysisId) {
-        await this.logFailure(analysisId, errorMessage, dto.input, latencyMs, ERROR_TYPES.TEST)
+        await this.logFailure(analysisId, errorMessage, dto.input, latencyMs, ERROR_TYPES.TEST, versionId)
       }
 
       return {
@@ -205,7 +206,6 @@ export const executionService = {
         callerService: params.callerService || null,
       })
     } catch {
-      // Logging failure is best-effort; swallowing to avoid cascading failures
     }
   },
 
@@ -215,10 +215,12 @@ export const executionService = {
     input: Record<string, unknown> | null = null,
     latencyMs: number = 0,
     errorType: ErrorType = ERROR_TYPES.EXECUTION,
+    versionId?: string,
     callerService?: string
   ): Promise<void> {
     await this.log({
       analysisId,
+      versionId: versionId || null,
       status: 'error',
       input,
       latencyMs,
@@ -297,8 +299,8 @@ export const executionService = {
     return executionRepository.findRecent(limit)
   },
 
-  async getStats(analysisId: string): Promise<AnalysisStats> {
-    return executionRepository.getStatsForAnalysis(analysisId)
+  async getStats(analysisId: string, versionId?: string): Promise<AnalysisStats> {
+    return executionRepository.getStatsForAnalysis(analysisId, versionId)
   },
 
   async getGlobalStats(): Promise<GlobalStats> {

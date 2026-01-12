@@ -1,0 +1,1 @@
+ALTER TABLE "analyses" ADD COLUMN "sample_data" text;

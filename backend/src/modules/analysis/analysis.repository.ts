@@ -1,6 +1,6 @@
 import { db, schema } from '../../db'
 import { eq, desc, like, sql } from 'drizzle-orm'
-import type { Analysis, AnalysisStatus } from '../../shared'
+import type { Analysis, AnalysisStatus } from '../../shared/types'
 
 export const analysisRepository = {
   async create(data: {

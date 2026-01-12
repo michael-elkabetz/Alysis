@@ -2,7 +2,8 @@ import { nanoid } from 'nanoid'
 import { promptRepository } from './prompt.repository'
 import { analysisRepository } from '../analysis/analysis.repository'
 import { inferVendor } from '../../clients'
-import type { PromptVersion, CreatePromptVersionDto } from '../../shared'
+import { generateInterfaces } from '../../shared/interfaces'
+import type { PromptVersion, CreatePromptVersionDto, AnalysisInterfaces } from '../../shared/types'
 
 export const promptService = {
   async create(analysisId: string, dto: CreatePromptVersionDto): Promise<PromptVersion> {
@@ -10,12 +11,14 @@ export const promptService = {
     const nextVersion = maxVersion + 1
     const id = `pv-${nanoid(10)}`
     const vendor = dto.vendor || inferVendor(dto.model)
+    const interfaces = dto.interfaces || generateInterfaces()
 
     return promptRepository.create({
       id,
       analysisId,
       version: nextVersion,
       systemPrompt: dto.systemPrompt,
+      interfaces,
       vendor: vendor || 'openai',
       model: dto.model || 'gpt-5.2',
       temperature: dto.temperature ?? 0.7,
@@ -75,5 +78,9 @@ export const promptService = {
     }
 
     return { success: true }
+  },
+
+  async updateInterfaces(analysisId: string, promptId: string, interfaces: AnalysisInterfaces): Promise<PromptVersion | null> {
+    return promptRepository.updateInterfaces(analysisId, promptId, interfaces)
   },
 }

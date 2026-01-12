@@ -1,6 +1,6 @@
 import { db, schema } from '../../db'
 import { eq } from 'drizzle-orm'
-import type { Vendor } from '../../shared'
+import type { Vendor } from '../../shared/types'
 
 export interface VendorKeyRecord {
   id: string

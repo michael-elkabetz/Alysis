@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { executionService } from './execution.service'
-import { DEFAULTS } from '../../shared'
+import { DEFAULTS } from '../../shared/constants'
 
 export const executionController = new Elysia({ prefix: '/api/v1' })
   .post('/analyze/:analysisId', async ({ params, body, request, set }) => {

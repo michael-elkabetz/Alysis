@@ -1,11 +1,21 @@
 import { Elysia, t } from 'elysia'
 import { analysisService } from './analysis.service'
 import { executionService } from '../execution/execution.service'
-import { DEFAULTS, LIMITS } from '../../shared'
+import { DEFAULTS, LIMITS } from '../../shared/constants'
 import { handleControllerError } from '../../utils/http'
 
 const VendorEnum = t.Union([t.Literal('openai'), t.Literal('anthropic'), t.Literal('gemini')])
 const ResponseFormatEnum = t.Union([t.Literal('json'), t.Literal('text')])
+const InterfacesSchema = t.Optional(t.Object({
+  output: t.Object({
+    type: t.Literal('object'),
+    properties: t.Record(t.String(), t.Object({
+      type: t.String(),
+      description: t.Optional(t.String()),
+    })),
+    required: t.Optional(t.Array(t.String())),
+  }),
+}))
 
 export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
   .post('/', async ({ body, set }) => {
@@ -28,11 +38,13 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
       name: t.String({ minLength: LIMITS.NAME_MIN_LENGTH }),
       description: t.Optional(t.String()),
       systemPrompt: t.String({ minLength: LIMITS.NAME_MIN_LENGTH }),
+      interfaces: InterfacesSchema,
       vendor: t.Optional(VendorEnum),
       model: t.Optional(t.String()),
       temperature: t.Optional(t.Number({ minimum: LIMITS.TEMPERATURE_MIN, maximum: LIMITS.TEMPERATURE_MAX })),
       maxTokens: t.Optional(t.Number({ minimum: 1, maximum: LIMITS.MAX_TOKENS_CEILING })),
       responseFormat: t.Optional(ResponseFormatEnum),
+      sampleData: t.Optional(t.String()),
     }),
     detail: { tags: ['Apps'], summary: 'Create app' },
   })
@@ -78,6 +90,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
     body: t.Object({
       name: t.Optional(t.String({ minLength: LIMITS.NAME_MIN_LENGTH })),
       description: t.Optional(t.String()),
+      sampleData: t.Optional(t.String()),
     }),
     detail: { tags: ['Apps'], summary: 'Update app' },
   })
@@ -126,11 +139,12 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
     detail: { tags: ['Apps'], summary: 'Deprecate app' },
   })
 
-  .get('/:id/stats', async ({ params }) => {
-    return executionService.getStats(params.id)
+  .get('/:id/stats', async ({ params, query }) => {
+    return executionService.getStats(params.id, query.versionId)
   }, {
     params: t.Object({ id: t.String() }),
-    detail: { tags: ['Apps'], summary: 'Get app statistics' },
+    query: t.Object({ versionId: t.Optional(t.String()) }),
+    detail: { tags: ['Apps'], summary: 'Get app statistics (optionally filter by version)' },
   })
 
   .get('/:id/logs', async ({ params, query }) => {
@@ -155,7 +169,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .post('/test-prompt', async ({ body, set }) => {
     try {
-      const result = await executionService.testDirect(body, body.analysisId)
+      const result = await executionService.testDirect(body, body.analysisId, body.versionId)
       if (result.error) {
         set.status = 400
         return { error: result.error, ...result }
@@ -174,6 +188,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
       maxTokens: t.Optional(t.Number({ minimum: 1, maximum: LIMITS.MAX_TOKENS_CEILING })),
       responseFormat: t.Optional(ResponseFormatEnum),
       analysisId: t.Optional(t.String()),
+      versionId: t.Optional(t.String()),
     }),
     detail: { tags: ['Apps'], summary: 'Test prompt' },
   })

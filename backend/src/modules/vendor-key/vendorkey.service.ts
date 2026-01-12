@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { vendorKeyRepository } from './vendorkey.repository'
-import type { Vendor, VendorKeyStatus } from '../../shared'
+import type { Vendor, VendorKeyStatus } from '../../shared/types'
 
 function encodeKey(key: string): string {
   return Buffer.from(key).toString('base64')

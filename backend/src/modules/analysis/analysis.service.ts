@@ -3,8 +3,9 @@ import { analysisRepository } from './analysis.repository'
 import { promptRepository } from '../prompt/prompt.repository'
 import { apiKeyService } from '../api-key/apikey.service'
 import { inferVendor } from '../../clients'
-import { DEFAULTS, ID_PREFIXES } from '../../shared'
-import type { Analysis, CreateAnalysisDto, UpdateAnalysisDto } from '../../shared'
+import { DEFAULTS, ID_PREFIXES } from '../../shared/constants'
+import { generateInterfaces } from '../../shared/interfaces'
+import type { Analysis, CreateAnalysisDto, UpdateAnalysisDto } from '../../shared/types'
 
 function generateAnalysisId(name: string): string {
   const kebab = name
@@ -26,14 +27,17 @@ export const analysisService = {
       name: dto.name,
       description: dto.description || null,
       status: 'active',
+      sampleData: dto.sampleData || null,
     })
 
+    const interfaces = dto.interfaces || generateInterfaces()
     const versionId = `${ID_PREFIXES.PROMPT_VERSION}${nanoid(10)}`
     await promptRepository.create({
       id: versionId,
       analysisId: id,
       version: 1,
       systemPrompt: dto.systemPrompt,
+      interfaces,
       vendor: dto.vendor || inferVendor(dto.model),
       model: dto.model || DEFAULTS.MODEL,
       temperature: dto.temperature ?? DEFAULTS.TEMPERATURE,

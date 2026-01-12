@@ -1,6 +1,6 @@
 import { db, schema } from '../../db'
 import { eq, desc, sql, and, isNotNull } from 'drizzle-orm'
-import type { ExecutionLog, ExecutionStatus } from '../../shared'
+import type { ExecutionLog, ExecutionStatus } from '../../shared/types'
 
 export interface RawVersionCostStats {
   versionId: string | null
@@ -72,13 +72,20 @@ export const executionRepository = {
     return logs as ExecutionLog[]
   },
 
-  async getStatsForAnalysis(analysisId: string): Promise<{
+  async getStatsForAnalysis(analysisId: string, versionId?: string): Promise<{
     totalExecutions: number
     successCount: number
     errorCount: number
     avgLatencyMs: number
     totalTokens: number
   }> {
+    const whereConditions = versionId
+      ? and(
+          eq(schema.executionLogs.analysisId, analysisId),
+          eq(schema.executionLogs.versionId, versionId)
+        )
+      : eq(schema.executionLogs.analysisId, analysisId)
+
     const [result] = await db
       .select({
         totalExecutions: sql<number>`count(*)::int`,
@@ -88,7 +95,7 @@ export const executionRepository = {
         totalTokens: sql<number>`coalesce(sum((${schema.executionLogs.tokenUsage}->>'total')::int), 0)::int`,
       })
       .from(schema.executionLogs)
-      .where(eq(schema.executionLogs.analysisId, analysisId))
+      .where(whereConditions)
 
     return result || {
       totalExecutions: 0,

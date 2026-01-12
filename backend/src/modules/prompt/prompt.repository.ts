@@ -1,6 +1,6 @@
 import { db, schema } from '../../db'
 import { eq, desc, and, sql } from 'drizzle-orm'
-import type { PromptVersion, Vendor, ResponseFormat } from '../../shared'
+import type { PromptVersion, Vendor, ResponseFormat, AnalysisInterfaces } from '../../shared/types'
 
 export const promptRepository = {
   async create(data: {
@@ -8,6 +8,7 @@ export const promptRepository = {
     analysisId: string
     version: number
     systemPrompt: string
+    interfaces: AnalysisInterfaces | null
     vendor: Vendor
     model: string
     temperature: number
@@ -22,6 +23,7 @@ export const promptRepository = {
         analysisId: data.analysisId,
         version: data.version,
         systemPrompt: data.systemPrompt,
+        interfaces: data.interfaces,
         provider: data.vendor,
         model: data.model,
         temperature: data.temperature,
@@ -34,6 +36,7 @@ export const promptRepository = {
       .returning()
     return {
       ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
       vendor: version.provider as Vendor,
     }
   },
@@ -44,7 +47,11 @@ export const promptRepository = {
       .from(schema.promptVersions)
       .where(eq(schema.promptVersions.analysisId, analysisId))
       .orderBy(desc(schema.promptVersions.version))
-    return results.map((r) => ({ ...r, vendor: r.provider as Vendor }))
+    return results.map((r) => ({
+      ...r,
+      interfaces: r.interfaces as PromptInterfaces | null,
+      vendor: r.provider as Vendor,
+    }))
   },
 
   async findById(analysisId: string, promptId: string): Promise<PromptVersion | null> {
@@ -59,7 +66,11 @@ export const promptRepository = {
       )
       .limit(1)
     if (!version) return null
-    return { ...version, vendor: version.provider as Vendor }
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async findByIdOnly(promptId: string): Promise<PromptVersion | null> {
@@ -69,7 +80,11 @@ export const promptRepository = {
       .where(eq(schema.promptVersions.id, promptId))
       .limit(1)
     if (!version) return null
-    return { ...version, vendor: version.provider as Vendor }
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async findByVersionNumber(analysisId: string, versionNumber: number): Promise<PromptVersion | null> {
@@ -84,7 +99,11 @@ export const promptRepository = {
       )
       .limit(1)
     if (!version) return null
-    return { ...version, vendor: version.provider as Vendor }
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async findLatest(analysisId: string): Promise<PromptVersion | null> {
@@ -95,7 +114,11 @@ export const promptRepository = {
       .orderBy(desc(schema.promptVersions.version))
       .limit(1)
     if (!version) return null
-    return { ...version, vendor: version.provider as Vendor }
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async getMaxVersion(analysisId: string): Promise<number> {
@@ -118,7 +141,11 @@ export const promptRepository = {
       )
       .returning()
     if (!version) return null
-    return { ...version, vendor: version.provider as Vendor }
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async delete(analysisId: string, promptId: string): Promise<boolean> {
@@ -132,6 +159,25 @@ export const promptRepository = {
       )
       .returning({ id: schema.promptVersions.id })
     return result.length > 0
+  },
+
+  async updateInterfaces(analysisId: string, promptId: string, interfaces: AnalysisInterfaces): Promise<PromptVersion | null> {
+    const [version] = await db
+      .update(schema.promptVersions)
+      .set({ interfaces })
+      .where(
+        and(
+          eq(schema.promptVersions.analysisId, analysisId),
+          eq(schema.promptVersions.id, promptId)
+        )
+      )
+      .returning()
+    if (!version) return null
+    return {
+      ...version,
+      interfaces: version.interfaces as AnalysisInterfaces | null,
+      vendor: version.provider as Vendor,
+    }
   },
 
   async count(analysisId: string): Promise<number> {

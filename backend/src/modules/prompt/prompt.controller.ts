@@ -131,3 +131,32 @@ export const promptController = new Elysia({ prefix: '/api/v1/analyses/:id/promp
     body: t.Object({ input: t.Record(t.String(), t.Unknown()) }),
     detail: { tags: ['Prompts'], summary: 'Test prompt version' },
   })
+
+  .put('/:promptId/interfaces', async ({ params, body, set }) => {
+    try {
+      const version = await promptService.updateInterfaces(params.id, params.promptId, body.interfaces)
+      if (!version) {
+        set.status = 404
+        return { error: 'Prompt version not found' }
+      }
+      return version
+    } catch (error) {
+      set.status = 400
+      return { error: error instanceof Error ? error.message : 'Failed to update interfaces' }
+    }
+  }, {
+    params: t.Object({ id: t.String(), promptId: t.String() }),
+    body: t.Object({
+      interfaces: t.Object({
+        output: t.Object({
+          type: t.Literal('object'),
+          properties: t.Record(t.String(), t.Object({
+            type: t.String(),
+            description: t.Optional(t.String()),
+          })),
+          required: t.Optional(t.Array(t.String())),
+        }),
+      }),
+    }),
+    detail: { tags: ['Prompts'], summary: 'Update prompt version interfaces' },
+  })

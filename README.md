@@ -22,16 +22,34 @@ Build, manage, and run AI-powered analysis apps with ease.
 
 ## Key Features
 
-- **Multi-Provider AI** — Switch between OpenAI, Anthropic, and Google Gemini
+### One-Stop Self-Hosted Solution
+- **Complete Platform** — Everything you need to build, test, and deploy AI analysis apps in one place
+- **Self-Hosted** — Full control over your data, prompts, and AI provider keys
+- **Docker Ready** — Deploy the entire stack with a single command
+
+### Product Playground
+- **Interactive Testing** — Test your prompts in real-time before going live
+- **Multi-Provider Support** — Switch between OpenAI, Anthropic, and Google Gemini instantly
+- **Sample Data Management** — Store and reuse test inputs for rapid iteration
 - **Prompt Versioning** — Full version control with draft → active → deprecated workflow
-- **Prompt Testing** — Test prompts directly before publishing
-- **API Key Auth** — Secure endpoints with auto-generated API keys per app
-- **Vendor Key Management** — Store AI provider keys in database or use environment variables
+
+### Performance & Cost Measurement
+- **Real-Time Analytics** — Track latency and token usage for every request
+- **Per-Version Cost Stats** — Compare pricing and performance across prompt versions
 - **Execution Logs** — Complete audit trail of all requests and responses
-- **Token Stats** — Track usage, latency, and cost across all your apps
-- **Response Formats** — Support for both JSON and text response formats
-- **Swagger Docs** — Interactive API documentation at `/docs`
-- **Docker Ready** — One command to deploy the entire stack
+- **Cost Optimization** — Make data-driven decisions about model selection
+
+### Developer Experience (Dev Space)
+- **Type-Safe Integration** — Auto-generated TypeScript interfaces from your AI responses
+- **Ready-to-Use Code** — Copy production-ready cURL commands with your API key
+- **Simple Integration** — Send data from your app → get structured analysis back
+- **Expected Response Schema** — Know exactly what your app will receive
+- **API Documentation** — Interactive Swagger docs at `/docs`
+
+### Security & Management
+- **API Key Authentication** — Secure endpoints with auto-generated keys per app
+- **Vendor Key Management** — Store AI provider keys in database or use environment variables
+- **JSON & Text Formats** — Flexible response formats for any use case
 
 ---
 
@@ -70,15 +88,31 @@ cd frontend && npm install && npm run dev
 
 ## Tech Stack
 
-| Component    | Technology                                 |
-| ------------ |--------------------------------------------|
-| **Runtime**  | Bun                                        |
-| **Backend**  | Elysia                                     |
-| **Frontend** | React 19 + Vite + TailwindCSS + shadcn/ui  |
-| **Database** | PostgreSQL 16                              |
-| **ORM**      | Drizzle ORM                                |
-| **AI**       | OpenAI SDK, Anthropic SDK, Google GenAI SDK |
-| **Data**     | TanStack Query                             |
+| Component    | Technology                                                      |
+| ------------ |-----------------------------------------------------------------|
+| **Runtime**  | Bun                                                             |
+| **Backend**  | Elysia + Swagger                                                |
+| **Frontend** | React 19 + Vite + TailwindCSS + shadcn/ui + Framer Motion       |
+| **Database** | PostgreSQL 16                                                   |
+| **ORM**      | Drizzle ORM                                                     |
+| **AI**       | OpenAI SDK, Anthropic SDK, Google GenAI SDK                     |
+| **Data**     | TanStack Query                                                  |
+| **UI/UX**    | Radix UI + Recharts + Sonner + Lucide Icons                     |
+
+---
+
+## UI Features
+
+The frontend is built with a modern, feature-based architecture for maximum maintainability:
+
+- **Feature-Based Organization** — Modular components organized by domain (analysis, execution, etc.)
+- **Responsive Design** — Mobile-optimized layouts with adaptive UI components
+- **Real-Time Updates** — TanStack Query for automatic data synchronization
+- **Accessible Components** — Built on Radix UI primitives for WCAG compliance
+- **Animated Transitions** — Smooth micro-interactions powered by Framer Motion
+- **Data Visualization** — Interactive charts and analytics via Recharts
+- **Toast Notifications** — Non-intrusive feedback using Sonner
+- **40+ UI Components** — Complete shadcn/ui component library included
 
 ---
 
@@ -129,6 +163,16 @@ curl -X POST http://localhost:3001/api/v1/analyze/e-comm-G9fDp \
 
 Full API documentation available at `/docs` (Swagger UI).
 
+### Dev Space
+
+The UI includes a built-in Dev Space that automatically generates ready-to-use integration code:
+
+- **cURL Commands** — Copy production-ready cURL snippets with your API key
+- **TypeScript Interfaces** — Auto-generated type definitions from AI responses
+- **Sample Data Integration** — Pre-populated requests using your saved sample data
+
+Access Dev Space by clicking the terminal icon in the analysis detail view.
+
 ---
 
 ## Configuration
@@ -162,19 +206,30 @@ Full API documentation available at `/docs` (Swagger UI).
 ├── backend/                  # Bun + Elysia API
 │   ├── src/
 │   │   ├── clients/          # AI provider clients (OpenAI, Anthropic, Gemini)
-│   │   ├── controllers/      # API route handlers
+│   │   ├── modules/          # Feature modules (analysis, prompt, execution, etc.)
+│   │   │   ├── analysis/     # Analysis domain (controller, service, repository)
+│   │   │   ├── prompt/       # Prompt versioning domain
+│   │   │   ├── execution/    # Execution logs domain
+│   │   │   ├── api-key/      # API key management
+│   │   │   ├── vendor-key/   # Vendor API key management
+│   │   │   └── dev-tools/    # Developer tools
 │   │   ├── db/               # Drizzle schema & migrations
-│   │   ├── repositories/     # Data access layer
-│   │   ├── services/         # Business logic
-│   │   ├── types/            # TypeScript types
+│   │   ├── config/           # Configuration (model pricing, etc.)
+│   │   ├── shared/           # Shared types & interfaces
+│   │   ├── utils/            # Utilities
 │   │   └── index.ts          # App entry point
 │   └── Dockerfile
-├── frontend/                 # React App
+├── frontend/                 # React 19 App
 │   ├── src/
-│   │   ├── components/       # UI components (shadcn/ui)
-│   │   ├── hooks/            # Custom React hooks
-│   │   ├── lib/              # Utilities
-│   │   └── pages/            # Route pages
+│   │   ├── features/         # Feature-based organization
+│   │   │   └── analysis/     # Analysis feature module
+│   │   │       ├── components/ # AppCard, PromptEditor, StatsGrid, DevSpaceSheet, etc.
+│   │   │       └── hooks/    # useTestRunner, usePromptEditor, useInlineEdit, etc.
+│   │   ├── components/ui/    # shadcn/ui components (40+ components)
+│   │   ├── layouts/          # Layout components (BackgroundEffects)
+│   │   ├── pages/            # Route pages (AnalysesList, AnalysisDetail)
+│   │   ├── hooks/            # Shared hooks (useRelativeTime, useMobile)
+│   │   └── lib/              # Utilities (api.ts, type-generators.ts)
 │   └── Dockerfile
 └── README.md
 ```
@@ -183,13 +238,13 @@ Full API documentation available at `/docs` (Swagger UI).
 
 ## Database Schema
 
-| Table             | Description                                  |
-| ----------------- | -------------------------------------------- |
-| `analyses`        | Analysis apps with name, description, status |
-| `prompt_versions` | Versioned prompts with model config          |
-| `execution_logs`  | Request/response audit trail                 |
-| `api_keys`        | Per-app API keys for authentication          |
-| `vendor_api_keys` | Stored AI provider keys (encrypted)          |
+| Table             | Description                                            |
+| ----------------- | ------------------------------------------------------ |
+| `analyses`        | Analysis apps with name, description, status, and sample data |
+| `prompt_versions` | Versioned prompts with model config and interfaces     |
+| `execution_logs`  | Request/response audit trail with token usage          |
+| `api_keys`        | Per-app API keys for authentication                    |
+| `vendor_api_keys` | Stored AI provider keys (encrypted)                    |
 
 ---
 
