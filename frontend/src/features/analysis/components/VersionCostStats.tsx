@@ -24,7 +24,7 @@ export function VersionCostStats({ analysisId, selectedVersionId }: VersionCostS
 
   if (isLoading) {
     return (
-      <div className="stat-card rounded-xl border border-border/50">
+      <div className="stat-card rounded-xl border border-border/50 flex flex-col items-center text-center">
         <div className="flex items-center gap-2 mb-1">
           <DollarSign className="w-4 h-4 text-primary" />
           <span className="text-xs text-muted-foreground">Version Cost</span>
@@ -39,7 +39,7 @@ export function VersionCostStats({ analysisId, selectedVersionId }: VersionCostS
     : costStats?.reduce((sum, stat) => sum + stat.totalCost, 0) ?? 0;
 
   return (
-    <div className="stat-card rounded-xl border border-border/50">
+    <div className="stat-card rounded-xl border border-border/50 flex flex-col items-center text-center">
       <div className="flex items-center gap-2 mb-1">
         <DollarSign className="w-4 h-4 text-primary" />
         <span className="text-xs text-muted-foreground">Version Cost</span>

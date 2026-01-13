@@ -10,6 +10,7 @@ import { SettingsDialog } from '@/components/SettingsDialog';
 import BackgroundEffects from '@/layouts/BackgroundEffects';
 import { AppsGrid } from '@/features/analysis/components/AppsGrid';
 import { CreateAnalysisDialog } from '@/features/analysis/components/CreateAnalysisDialog';
+import { DeleteAppDialog } from '@/features/analysis/components/DeleteDialogs';
 import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/analysis/hooks/useAnalysisApiKey';
 import { toast } from 'sonner';
 
@@ -18,10 +19,11 @@ export default function AnalysesList() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [appToDelete, setAppToDelete] = useState<Analysis | null>(null);
 
   const { data: apps = [], isLoading } = useQuery<Analysis[]>({
     queryKey: ['analyses'],
-    queryFn: async () => await getAnalyses(),
+    queryFn: () => getAnalyses(),
   });
 
   const deleteMutation = useMutation({
@@ -68,8 +70,16 @@ export default function AnalysesList() {
 
   const handleDelete = (e: React.MouseEvent, appId: string) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this app?')) {
-      deleteMutation.mutate(appId);
+    const app = apps.find((a) => a.id === appId);
+    if (app) {
+      setAppToDelete(app);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (appToDelete) {
+      deleteMutation.mutate(appToDelete.id);
+      setAppToDelete(null);
     }
   };
 
@@ -151,6 +161,13 @@ export default function AnalysesList() {
           setIsCreateDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: ['analyses'] });
         }}
+      />
+
+      <DeleteAppDialog
+        isOpen={!!appToDelete}
+        onOpenChange={(open) => !open && setAppToDelete(null)}
+        appName={appToDelete?.name || ''}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

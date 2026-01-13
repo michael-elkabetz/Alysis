@@ -4,13 +4,11 @@ import { DEFAULTS } from '../../shared/constants'
 
 export const executionController = new Elysia({ prefix: '/api/v1' })
   .post('/analyze/:analysisId', async ({ params, body, request, set }) => {
-    const apiKey = request.headers.get('x-api-key')
     const callerService = request.headers.get('x-caller-service') || undefined
 
-    const result = await executionService.executeWithAuth(
+    const result = await executionService.executeRequest(
       params.analysisId,
       body,
-      apiKey,
       callerService
     )
 

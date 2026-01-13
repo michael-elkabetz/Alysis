@@ -2,13 +2,12 @@ import { nanoid } from 'nanoid'
 import { executionRepository } from './execution.repository'
 import { analysisRepository } from '../analysis/analysis.repository'
 import { promptService } from '../prompt/prompt.service'
-import { apiKeyService } from '../api-key/apikey.service'
 import { getClient, inferVendor } from '../../clients'
 import { getModelPricing } from '../../config/model-pricing'
 import { DEFAULTS, ID_PREFIXES, ERROR_TYPES } from '../../shared/constants'
 import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor, VersionCostStats, ErrorType } from '../../shared/types'
 
-type ExecuteWithAuthResult = {
+type ExecuteResult = {
   success: true
   log: ExecutionLog
 } | {
@@ -43,45 +42,11 @@ function extractJson(content: string): Record<string, unknown> | null {
 }
 
 export const executionService = {
-  async executeWithAuth(
+  async executeRequest(
     analysisId: string,
     dto: ExecuteAnalysisDto,
-    apiKey: string | null,
     callerService?: string
-  ): Promise<ExecuteWithAuthResult> {
-    if (!apiKey) {
-      await this.logFailure(
-        analysisId,
-        'Missing API key. Include X-API-Key header.',
-        dto.input || {},
-        0,
-        ERROR_TYPES.AUTH,
-        callerService
-      )
-      return {
-        success: false,
-        error: 'Missing API key. Include X-API-Key header.',
-        statusCode: 401,
-      }
-    }
-
-    const validation = await apiKeyService.validate(apiKey, analysisId)
-    if (!validation.valid) {
-      await this.logFailure(
-        analysisId,
-        'Invalid API key or key does not have access to this app.',
-        dto.input || {},
-        0,
-        ERROR_TYPES.AUTH,
-        callerService
-      )
-      return {
-        success: false,
-        error: 'Invalid API key or key does not have access to this app.',
-        statusCode: 403,
-      }
-    }
-
+  ): Promise<ExecuteResult> {
     try {
       const log = await this.execute(analysisId, dto, callerService)
       return { success: true, log }
@@ -191,22 +156,19 @@ export const executionService = {
     callerService?: string
   }): Promise<void> {
     const id = `${ID_PREFIXES.EXECUTION}${nanoid(10)}`
-    try {
-      await executionRepository.create({
-        id,
-        analysisId: params.analysisId,
-        versionId: params.versionId || null,
-        input: params.input || {},
-        output: params.output || null,
-        rawResponse: params.rawResponse || null,
-        latencyMs: params.latencyMs,
-        tokenUsage: params.tokenUsage || null,
-        status: params.status,
-        errorMessage: params.errorMessage || null,
-        callerService: params.callerService || null,
-      })
-    } catch {
-    }
+    await executionRepository.create({
+      id,
+      analysisId: params.analysisId,
+      versionId: params.versionId || null,
+      input: params.input || {},
+      output: params.output || null,
+      rawResponse: params.rawResponse || null,
+      latencyMs: params.latencyMs,
+      tokenUsage: params.tokenUsage || null,
+      status: params.status,
+      errorMessage: params.errorMessage || null,
+      callerService: params.callerService || null,
+    })
   },
 
   async logFailure(

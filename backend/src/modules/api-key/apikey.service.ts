@@ -5,14 +5,12 @@ function generateApiKey(): string {
   return `aak_${nanoid(32)}`
 }
 
-function hashApiKey(key: string): string {
+async function hashApiKey(key: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(key)
-  let hash = 5381
-  for (const byte of data) {
-    hash = ((hash << 5) + hash) ^ byte
-  }
-  return Math.abs(hash).toString(16).padStart(16, '0')
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 export interface CreateApiKeyResult {
@@ -26,7 +24,7 @@ export interface CreateApiKeyResult {
 export const apiKeyService = {
   async createForAnalysis(analysisId: string, name?: string): Promise<CreateApiKeyResult> {
     const key = generateApiKey()
-    const keyHash = hashApiKey(key)
+    const keyHash = await hashApiKey(key)
     const id = `ak-${nanoid(10)}`
     const keyName = name || `API Key for ${analysisId}`
 
@@ -43,7 +41,7 @@ export const apiKeyService = {
 
   async createGlobal(name: string): Promise<CreateApiKeyResult> {
     const key = generateApiKey()
-    const keyHash = hashApiKey(key)
+    const keyHash = await hashApiKey(key)
     const id = `ak-${nanoid(10)}`
 
     const apiKey = await apiKeyRepository.create({ id, name, keyHash, analysisId: null })
@@ -58,14 +56,14 @@ export const apiKeyService = {
   },
 
   async validate(key: string, analysisId?: string): Promise<{ valid: boolean; name?: string; isGlobal?: boolean }> {
-    const keyHash = hashApiKey(key)
+    const keyHash = await hashApiKey(key)
     const apiKey = await apiKeyRepository.findByHash(keyHash)
 
     if (!apiKey) {
       return { valid: false }
     }
 
-    await apiKeyRepository.updateLastUsed(apiKey.id)
+    apiKeyRepository.updateLastUsed(apiKey.id).catch(() => {})
 
     if (!apiKey.analysisId) {
       return { valid: true, name: apiKey.name, isGlobal: true }
@@ -95,7 +93,7 @@ export const apiKeyService = {
     if (!existing) return null
 
     const newKey = generateApiKey()
-    const newKeyHash = hashApiKey(newKey)
+    const newKeyHash = await hashApiKey(newKey)
 
     const updated = await apiKeyRepository.updateKeyHash(keyId, newKeyHash)
     if (!updated) return null
