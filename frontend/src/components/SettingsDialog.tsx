@@ -47,6 +47,7 @@ export function SettingsDialog({ trigger }: SettingsDialogProps) {
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['vendor-keys'] });
+    queryClient.invalidateQueries({ queryKey: ['vendor-key-statuses'] });
     queryClient.invalidateQueries({ queryKey: ['providers'] });
     queryClient.invalidateQueries({ queryKey: ['vendors-models'] });
   };

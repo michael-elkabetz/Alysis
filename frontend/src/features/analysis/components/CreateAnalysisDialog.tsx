@@ -63,6 +63,7 @@ export function CreateAppDialog({
     name: string;
     apiKey: { key: string };
     testOutput?: Record<string, unknown>;
+    sampleData?: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
@@ -126,13 +127,14 @@ export function CreateAppDialog({
   }, [formData.vendor, formData.model, modelsByVendor]);
 
   const createMutation = useMutation({
-    mutationFn: (dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown> }) => createAnalysis(dto),
+    mutationFn: (dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown>; _sampleData?: string }) => createAnalysis(dto),
     onSuccess: (response, variables) => {
       setSavedAnalysis({
         id: response.id,
         name: response.name,
         apiKey: response.apiKey,
         testOutput: variables._testOutput,
+        sampleData: variables._sampleData,
       });
       toast.success('App created successfully');
     },
@@ -159,7 +161,7 @@ export function CreateAppDialog({
       return;
     }
     const generatedInterfaces = testResult?.output ? generateInterfacesFromOutput(testResult.output) : undefined;
-    const dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown> } = {
+    const dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown>; _sampleData?: string } = {
       name: formData.name,
       description: formData.description || undefined,
       systemPrompt: formData.systemPrompt,
@@ -168,6 +170,7 @@ export function CreateAppDialog({
       model: formData.model,
       sampleData: sampleData || undefined,
       _testOutput: testResult?.output,
+      _sampleData: sampleData || undefined,
     };
     createMutation.mutate(dto);
   };
@@ -228,10 +231,17 @@ export function CreateAppDialog({
 
   const generateCurl = () => {
     if (!savedAnalysis) return '';
+    
+    const inputData = savedAnalysis.sampleData 
+      ? JSON.stringify({ input: { data: savedAnalysis.sampleData } })
+      : '{"input": {"data": "your data here"}}';
+    
+    const escapedData = inputData.replace(/'/g, "'\\''");
+    
     return `curl -X POST "${window.location.origin}/api/v1/analyze/${savedAnalysis.id}" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${savedAnalysis.apiKey.key}" \\
-  -d '{"input": {"data": "your data here"}}'`;
+  -d '${escapedData}'`;
   };
 
   const copyCurl = () => {

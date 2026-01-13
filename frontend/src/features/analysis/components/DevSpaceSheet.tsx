@@ -44,10 +44,12 @@ export function DevSpaceSheet({
       ? JSON.stringify({ input: { data: sampleData } })
       : '{"input": {"data": "your data here"}}';
     
+    const escapedData = inputData.replace(/'/g, "'\\''");
+    
     return `curl -X POST "${endpointUrl}" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${apiKey || 'YOUR_API_KEY'}" \\
-  -d '${inputData}'`;
+  -d '${escapedData}'`;
   };
 
   useEffect(() => {

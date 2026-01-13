@@ -14,15 +14,15 @@ Build, manage, and run AI-powered analysis apps with ease.
 
 ## Overview
 
-**Alysis** is a self-hosted platform for creating and executing AI analysis applications. Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose them as secure API endpoints — all with built-in versioning, logging, and statistics.
+**Alysis** is a self-hosted platform for creating and executing AI analysis applications. It combines the best of LiteLLM and LangFuse — giving you prompt management, multi-provider AI support, and observability in one platform.
+
+Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose them as secure API endpoints — all with built-in versioning, logging, and statistics.
 
 ![Alysis Platform Details](info.png)
 
 ---
 
 ## Key Features
-
-**Alysis is a self-hosted solution that combines the best of LiteLLM and LangFuse** — giving you prompt management, multi-provider AI support, and observability in one platform.
 
 ### For Product Teams: Prompt Engineering & Testing
 - **Interactive Playground** — Build and refine prompts with real-time testing
@@ -152,11 +152,22 @@ POST /api/v1/analyze/:appId
 ```bash
 curl -X POST http://localhost:3001/api/v1/analyze/e-comm-G9fDp \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: ak_xxxx..." \
+  -H "X-API-Key: aak_xxxx..." \
   -d '{"input": {"data": "I love this product!"}}'
 ```
 
 Full API documentation available at `/docs` (Swagger UI).
+
+### Troubleshooting
+
+**API Key Errors**
+
+If you receive `Invalid API key or key does not have access to this app`:
+
+1. **Use the correct API key** - The key is shown once when you create the app. Copy it from the UI or check the Developer Space.
+2. **Verify the key format** - API keys start with `aak_` followed by 32 characters (e.g., `aak_xyz123...`).
+3. **Check app access** - If using an app-specific key, ensure it matches the `appId` in the URL.
+4. **Global vs App keys** - Global API keys work for all apps; app-specific keys only work for their assigned app.
 
 ### Dev Space
 
