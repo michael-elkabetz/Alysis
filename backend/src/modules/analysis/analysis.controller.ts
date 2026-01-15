@@ -49,6 +49,21 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
     detail: { tags: ['Apps'], summary: 'Create app' },
   })
 
+  .post('/magic', async ({ body, set }) => {
+    try {
+      return await analysisService.magic(body.description, body.vendor, body.model)
+    } catch (error) {
+      return handleControllerError(error, set, 'Failed to generate app config')
+    }
+  }, {
+    body: t.Object({
+      description: t.String({ minLength: 5 }),
+      vendor: t.Optional(VendorEnum),
+      model: t.Optional(t.String()),
+    }),
+    detail: { tags: ['Apps'], summary: 'Generate app configuration using AI' },
+  })
+
   .get('/', async ({ query }) => {
     return analysisService.getAll(query.search)
   }, {

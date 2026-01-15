@@ -1,8 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Plus, Search, Settings } from 'lucide-react';
-import { getAnalyses, deleteAnalysis, type Analysis } from '@/lib/api';
+import { Search, Settings } from 'lucide-react';
+import { 
+  getAnalyses, 
+  deleteAnalysis, 
+  getVendorsAndModels, 
+  getVendorKeyStatuses,
+  magicGenerate,
+  type Analysis,
+  type Vendor,
+} from '@/lib/api';
+
+interface InitialDialogValues {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  vendor: string;
+  model: string;
+  sampleData?: string;
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import logoImg from '@/assets/logo.png';
@@ -11,6 +28,7 @@ import BackgroundEffects from '@/layouts/BackgroundEffects';
 import { AppsGrid } from '@/features/analysis/components/AppsGrid';
 import { CreateAnalysisDialog } from '@/features/analysis/components/CreateAnalysisDialog';
 import { DeleteAppDialog } from '@/features/analysis/components/DeleteDialogs';
+import { MagicHero } from '@/features/analysis/components/MagicHero';
 import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/analysis/hooks/useAnalysisApiKey';
 import { toast } from 'sonner';
 
@@ -20,10 +38,42 @@ export default function AnalysesList() {
   const [search, setSearch] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [appToDelete, setAppToDelete] = useState<Analysis | null>(null);
+  const [initialDialogValues, setInitialDialogValues] = useState<InitialDialogValues | undefined>(undefined);
 
   const { data: apps = [], isLoading } = useQuery<Analysis[]>({
     queryKey: ['analyses'],
     queryFn: () => getAnalyses(),
+  });
+
+  const { data: vendorsData } = useQuery({
+    queryKey: ['vendors-models'],
+    queryFn: getVendorsAndModels,
+  });
+
+  const { data: vendorKeyStatuses } = useQuery({
+    queryKey: ['vendor-key-statuses'],
+    queryFn: getVendorKeyStatuses,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: (data: { description: string; vendor: string; model: string }) => 
+      magicGenerate({
+        description: data.description,
+        vendor: data.vendor as Vendor,
+        model: data.model
+      }),
+    onSuccess: (data, variables) => {
+      setInitialDialogValues({
+        ...data,
+        vendor: variables.vendor,
+        model: variables.model,
+      });
+      setIsCreateDialogOpen(true);
+      toast.success('Configuration generated! Review and save.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -89,76 +139,88 @@ export default function AnalysesList() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative">
+    <div className="min-h-screen bg-background text-foreground relative selection:bg-primary/20">
       <BackgroundEffects />
 
-      <div className="max-w-6xl mx-auto px-6 py-12 relative z-10">
-        <header className="mb-12">
-          <div className="text-center mb-10">
-            <img
-              src={logoImg}
-              alt="Alysis"
-              className="h-16 mx-auto mb-4"
-            />
-            <p className="text-muted-foreground text-lg">
-              Your one-stop shop for AI analysis apps
-            </p>
+      {/* Modern Header: Glassmorphic, Sticky, Minimal */}
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/20">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Alysis" className="h-8 w-auto" />
+            <span className="font-semibold text-lg tracking-tight hidden sm:block">Alysis</span>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
-            <div className="relative flex-1 w-full group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              </div>
-              <Input
-                placeholder="Search apps..."
-                className="pl-11 h-12 bg-card/50 border-border/50 rounded-xl focus:border-primary/50"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Search apps"
-              />
-            </div>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="btn-primary h-12 px-6 gap-2 shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              New App
-            </Button>
+          
+          <div className="flex items-center gap-2">
             <SettingsDialog
               trigger={
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-12 shrink-0 border-border/50"
-                  aria-label="Settings"
-                >
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-primary/10 transition-colors">
                   <Settings className="w-4 h-4" />
                 </Button>
               }
             />
           </div>
-        </header>
+        </div>
+      </nav>
 
-        <AppsGrid
-          apps={apps}
-          filteredApps={filteredApps}
-          isLoading={isLoading}
-          searchQuery={search}
-          onClearSearch={() => setSearch('')}
-          onCreateApp={() => setIsCreateDialogOpen(true)}
-          onNavigateToApp={(appId) => navigate(`/analyses/${appId}`)}
-          onCopyApiKey={handleCopyApiKey}
-          onCopyCurl={handleCopyCurl}
-          onDeleteApp={handleDelete}
-        />
+      <div className="max-w-6xl mx-auto px-6 py-12 relative z-10 space-y-12">
+        {/* Hero Section: Focused on Action */}
+        <section className="flex flex-col items-center justify-center space-y-8 pt-8 pb-4">
+
+          <MagicHero 
+            vendors={vendorsData?.vendors ?? []}
+            modelsByVendor={vendorsData?.modelsByVendor ?? {}}
+            vendorKeyStatuses={vendorKeyStatuses}
+            onGenerate={(data) => generateMutation.mutate(data)}
+            onManual={() => {
+              setInitialDialogValues(undefined);
+              setIsCreateDialogOpen(true);
+            }}
+            isGenerating={generateMutation.isPending}
+          />
+        </section>
+
+        {/* Content Section with Integrated Search */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <h2 className="text-xl font-semibold tracking-tight">Your Apps</h2>
+             <div className="relative w-full sm:w-72 group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              </div>
+              <Input
+                placeholder="Search apps..."
+                className="pl-9 h-10 bg-secondary/30 border-transparent focus:bg-background transition-all rounded-lg"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <AppsGrid
+            apps={apps}
+            filteredApps={filteredApps}
+            isLoading={isLoading}
+            searchQuery={search}
+            onClearSearch={() => setSearch('')}
+            onCreateApp={() => {
+              setInitialDialogValues(undefined);
+              setIsCreateDialogOpen(true);
+            }}
+            onNavigateToApp={(appId) => navigate(`/analyses/${appId}`)}
+            onCopyApiKey={handleCopyApiKey}
+            onCopyCurl={handleCopyCurl}
+            onDeleteApp={handleDelete}
+          />
+        </div>
       </div>
 
       <CreateAnalysisDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
+        initialValues={initialDialogValues}
         onSuccess={() => {
           setIsCreateDialogOpen(false);
+          setInitialDialogValues(undefined);
           queryClient.invalidateQueries({ queryKey: ['analyses'] });
         }}
       />

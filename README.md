@@ -18,7 +18,7 @@ Build, manage, and run AI-powered analysis apps with ease.
 
 Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose them as secure API endpoints — all with built-in versioning, logging, and statistics.
 
-![Alysis Platform Details](info.png)
+![Alysis Platform Details](alysis.gif)
 
 ---
 

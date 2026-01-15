@@ -43,12 +43,21 @@ interface CreateAppDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialValues?: {
+    name: string;
+    description: string;
+    systemPrompt: string;
+    vendor: string;
+    model: string;
+    sampleData?: string;
+  };
 }
 
 export function CreateAppDialog({
   open,
   onOpenChange,
   onSuccess,
+  initialValues,
 }: CreateAppDialogProps) {
   const [step, setStep] = useState<'configure' | 'prompt' | 'test'>('configure');
   const [formData, setFormData] = useState({
@@ -94,6 +103,7 @@ export function CreateAppDialog({
   const modelsByVendor = vendorsData?.modelsByVendor ?? {};
 
   const configuredVendor = useMemo(() => {
+
     if (!vendorKeyStatuses || !vendors.length) return null;
     const configured = vendorKeyStatuses.find((v) => v.configured);
     if (!configured) return null;
@@ -104,20 +114,36 @@ export function CreateAppDialog({
   const hasConfiguredVendor = configuredVendor !== null;
 
   useEffect(() => {
+    if (initialValues) {
+      setFormData({
+        name: initialValues.name,
+        description: initialValues.description,
+        systemPrompt: initialValues.systemPrompt,
+        vendor: initialValues.vendor,
+        model: initialValues.model,
+      });
+      if (initialValues.sampleData) {
+        setSampleData(initialValues.sampleData);
+      }
+      return;
+    }
+
     if (!configuredVendor || !modelsByVendor[configuredVendor.id]) return;
+    
+    const models = modelsByVendor[configuredVendor.id];
+    const defaultModel = models?.[0]?.id || '';
     
     setFormData((prev) => {
       if (prev.vendor && prev.vendor !== '' && vendors.some((v) => v.id === prev.vendor)) {
         return prev;
       }
-      const models = modelsByVendor[configuredVendor.id];
       return {
         ...prev,
         vendor: configuredVendor.id,
-        model: models?.[0]?.id || '',
+        model: defaultModel,
       };
     });
-  }, [configuredVendor, modelsByVendor, vendors]);
+  }, [configuredVendor, modelsByVendor, vendors, initialValues]);
 
   useEffect(() => {
     const vendorModels = modelsByVendor[formData.vendor];
@@ -125,6 +151,7 @@ export function CreateAppDialog({
       setFormData((prev) => ({ ...prev, model: vendorModels[0].id }));
     }
   }, [formData.vendor, formData.model, modelsByVendor]);
+
 
   const createMutation = useMutation({
     mutationFn: (dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown>; _sampleData?: string }) => createAnalysis(dto),
@@ -322,7 +349,7 @@ export function CreateAppDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl h-[700px] p-0 flex flex-col overflow-hidden bg-card border-border">
+      <DialogContent className="max-w-4xl h-[700px] p-0 flex flex-col bg-card border-border">
         <div className="px-6 pt-6 pb-4 border-b border-border/50">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
@@ -379,80 +406,82 @@ export function CreateAppDialog({
           ))}
         </div>
 
-        <div className={cn("flex-1 px-6 py-6", step === 'test' ? "overflow-y-auto" : "overflow-hidden")}>
+        <div className={cn("flex-1 px-6 py-6", step === 'test' ? "overflow-y-auto" : "overflow-y-auto")}>
           {step === 'configure' && (
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm">Name</Label>
-                <Input
-                  id="name"
-                  className="input-modern !bg-[#f5f0e8]"
-                  placeholder="e.g., sentiment-analyzer"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm">Description</Label>
-                <Input
-                  id="description"
-                  className="input-modern !bg-[#f5f0e8]"
-                  placeholder="What does this app do?"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <div className="h-full flex flex-col">
+              <div className="space-y-5 overflow-visible pb-2">
                 <div className="space-y-2">
-                  <Label className="text-sm">Provider</Label>
-                  <Select
-                    value={formData.vendor}
-                    onValueChange={(v) => setFormData({ ...formData, vendor: v })}
-                    disabled={!hasConfiguredVendor}
-                  >
-                    <SelectTrigger className="input-modern !bg-[#f5f0e8]">
-                      <SelectValue placeholder={hasConfiguredVendor ? "Select provider" : "No vendor configured"} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {vendors.filter((vendor) => 
-                        vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
-                      ).map((vendor) => (
-                        <SelectItem key={vendor.id} value={vendor.id} className="focus:bg-secondary">
-                          {vendor.displayName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="name" className="text-sm">Name</Label>
+                  <Input
+                    id="name"
+                    className="input-modern !bg-[#f5f0e8]"
+                    placeholder="e.g., sentiment-analyzer"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Model</Label>
-                  <Select
-                    value={formData.model}
-                    onValueChange={(v) => setFormData({ ...formData, model: v })}
-                    disabled={!hasConfiguredVendor || !formData.vendor}
-                  >
-                    <SelectTrigger className="input-modern !bg-[#f5f0e8]">
-                      <SelectValue placeholder={hasConfiguredVendor ? "Select model" : "No model available"} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {currentModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id} className="focus:bg-secondary">
-                          {model.displayName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
-              {!hasConfiguredVendor && vendorKeyStatuses && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>No vendor configured. Please add an API key in settings.</span>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-sm">Description</Label>
+                  <Input
+                    id="description"
+                    className="input-modern !bg-[#f5f0e8]"
+                    placeholder="What does this app do?"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
                 </div>
-              )}
+
+                <div className="grid grid-cols-2 gap-4 pb-1">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Provider</Label>
+                    <Select
+                      value={formData.vendor}
+                      onValueChange={(v) => setFormData({ ...formData, vendor: v })}
+                      disabled={!hasConfiguredVendor}
+                    >
+                      <SelectTrigger className="input-modern !bg-[#f5f0e8]">
+                        <SelectValue placeholder={hasConfiguredVendor ? "Select provider" : "No vendor configured"} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {vendors.filter((vendor) => 
+                          vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
+                        ).map((vendor) => (
+                          <SelectItem key={vendor.id} value={vendor.id} className="focus:bg-secondary">
+                            {vendor.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Model</Label>
+                    <Select
+                      value={formData.model}
+                      onValueChange={(v) => setFormData({ ...formData, model: v })}
+                      disabled={!hasConfiguredVendor || !formData.vendor}
+                    >
+                      <SelectTrigger className="input-modern !bg-[#f5f0e8]">
+                        <SelectValue placeholder={hasConfiguredVendor ? "Select model" : "No model available"} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {currentModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id} className="focus:bg-secondary">
+                            {model.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {!hasConfiguredVendor && vendorKeyStatuses && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>No vendor configured. Please add an API key in settings.</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

@@ -58,7 +58,6 @@ export function DevSpaceSheet({
       return;
     }
 
-    // Priority 1: Current session test result
     if (latestTestResult && Object.keys(latestTestResult).length > 0) {
       setInterfaceCode(generateInterface(analysisName, latestTestResult));
       return;
@@ -72,16 +71,12 @@ export function DevSpaceSheet({
         const { logs } = await getAnalysisLogs(analysisId, 1, 0);
         const successLog = logs.find(log => log.status === 'success' && log.output);
         
-        // Priority 2: Latest execution log output
         if (successLog?.output && Object.keys(successLog.output).length > 0) {
           setInterfaceCode(generateInterface(analysisName, successLog.output));
-        } 
-        // Priority 3: Stored interfaces from prompt version
-        else if (interfaces) {
+        } else if (interfaces) {
           setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
         }
       } catch {
-        // Fallback to stored interfaces on error
         if (interfaces) {
           setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
         }

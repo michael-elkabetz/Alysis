@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import { analysisRepository } from './analysis.repository'
 import { promptRepository } from '../prompt/prompt.repository'
 import { apiKeyService } from '../api-key/apikey.service'
-import { inferVendor } from '../../clients'
+import { inferVendor, getAllClients, getClient } from '../../clients'
 import { DEFAULTS, ID_PREFIXES } from '../../shared/constants'
 import { generateInterfaces } from '../../shared/interfaces'
 import type { Analysis, CreateAnalysisDto, UpdateAnalysisDto } from '../../shared/types'
@@ -53,6 +53,58 @@ export const analysisService = {
     return {
       analysis: { ...analysis, activeVersionId: versionId },
       apiKey,
+    }
+  },
+
+  async magic(description: string, vendor?: string, model?: string): Promise<{ name: string; description: string; systemPrompt: string; sampleData: string }> {
+    const allClients = await getAllClients()
+    
+    let selectedClient
+    let selectedModel: string
+    
+    if (vendor) {
+      selectedClient = allClients.find(c => c.name === vendor && c.available)
+      if (!selectedClient) {
+        throw new Error(`Provider "${vendor}" is not available or not configured.`)
+      }
+      selectedModel = model || selectedClient.models[0].id
+    } else {
+      selectedClient = allClients.find(c => c.available)
+      if (!selectedClient) {
+        throw new Error('No AI provider configured. Please configure an API key in settings first.')
+      }
+      selectedModel = selectedClient.models[0].id
+    }
+
+    const client = getClient(selectedClient.name)
+
+    const metaPrompt = `You are an expert AI Application Architect. 
+Your goal is to design an AI analysis tool based on the user's description.
+You MUST output a valid JSON object with the following fields:
+- "title": A short, catchy name for the app (kebab-case or snake_case preferred for IDs, but human readable is fine).
+- "short_description": A concise description (max 8 words).
+- "analysis_instructions": A detailed system prompt for the AI model that will perform the analysis. It should clearly define the role, the input format, and the expected output behavior.
+- "sample_data": A realistic example of input data (text or JSON) that this app would analyze.
+
+Do not include markdown formatting like \`\`\`json. Return only the raw JSON.`
+
+    const result = await client.complete(metaPrompt, `User Description: ${description}`, {
+      model: selectedModel,
+      temperature: 0.7,
+      maxTokens: 2000,
+      responseFormat: 'json'
+    })
+
+    try {
+      const parsed = JSON.parse(result.content)
+      return {
+        name: parsed.title || 'generated-app',
+        description: parsed.short_description || '',
+        systemPrompt: parsed.analysis_instructions || '',
+        sampleData: typeof parsed.sample_data === 'string' ? parsed.sample_data : JSON.stringify(parsed.sample_data, null, 2)
+      }
+    } catch (e) {
+      throw new Error('Failed to parse AI response. Please try again.')
     }
   },
 

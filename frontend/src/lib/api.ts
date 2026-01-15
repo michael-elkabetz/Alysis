@@ -187,6 +187,26 @@ export interface UpdateAnalysisDto {
   sampleData?: string;
 }
 
+export interface MagicGenerateResult {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  sampleData: string;
+}
+
+export interface MagicGenerateDto {
+  description: string;
+  vendor?: Vendor;
+  model?: string;
+}
+
+export async function magicGenerate(dto: MagicGenerateDto): Promise<MagicGenerateResult> {
+  return fetchApi<MagicGenerateResult>('/api/v1/analyses/magic', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
 export async function createAnalysis(dto: CreateAnalysisDto): Promise<AnalysisWithApiKey> {
   return fetchApi<AnalysisWithApiKey>('/api/v1/analyses', {
     method: 'POST',
