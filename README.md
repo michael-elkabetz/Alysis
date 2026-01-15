@@ -24,7 +24,7 @@ Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose 
 
 ## Key Features
 
-### For Product Teams: Prompt Engineering & Testing
+### For Product Teams: Prompt Engineering & Playground
 - **Interactive Playground** — Build and refine prompts with real-time testing
 - **Multi-Provider AI** — Test across OpenAI, Anthropic, and Google Gemini without code changes
 - **Cost & Performance Visibility** — See exactly how much each execution costs and how long it takes
