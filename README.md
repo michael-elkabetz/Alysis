@@ -29,7 +29,6 @@ Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose 
 - **Multi-Provider AI** — Test across OpenAI, Anthropic, and Google Gemini without code changes
 - **Cost & Performance Visibility** — See exactly how much each execution costs and how long it takes
 - **Version Comparison** — Compare latency and pricing across different prompt versions
-- **Sample Data Management** — Save test inputs for consistent iteration
 - **Publish When Ready** — Once satisfied, turn your prompt into a production API endpoint
 
 ### For Developers: Simple Integration
