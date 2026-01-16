@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { VendorOption, ModelOption, VendorKeyStatus } from '@/lib/api';
 
-interface MagicHeroProps {
+interface AIHeroProps {
   vendors: VendorOption[];
   modelsByVendor: Record<string, ModelOption[]>;
   vendorKeyStatuses?: VendorKeyStatus[];
@@ -22,14 +22,14 @@ interface MagicHeroProps {
   isGenerating: boolean;
 }
 
-export function MagicHero({
+export function AIHero({
   vendors,
   modelsByVendor,
   vendorKeyStatuses,
   onGenerate,
   onManual,
   isGenerating,
-}: MagicHeroProps) {
+}: AIHeroProps) {
   const [description, setDescription] = useState('');
   const [vendor, setVendor] = useState('');
   const [model, setModel] = useState('');

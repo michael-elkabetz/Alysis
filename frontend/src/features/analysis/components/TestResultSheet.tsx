@@ -27,7 +27,7 @@ interface TestResultSheetProps {
 
 const STATUS_TEXT: Record<TestStatus, string> = {
   idle: '',
-  running: 'Running test...',
+  running: 'Running Analysis...',
   generating_interfaces: 'Generating response interfaces...',
 };
 
@@ -50,7 +50,7 @@ export function TestResultSheet({
               <div className="p-1.5 rounded-lg bg-primary/10">
                 <FlaskConical className="w-4 h-4 text-primary" />
               </div>
-              <SheetTitle className="text-lg">Test Result</SheetTitle>
+              <SheetTitle className="text-lg">Analysis Result</SheetTitle>
               {result && (
                 <div className="flex items-center gap-1.5 ml-2">
                   <LatencyBadge latencyMs={result.latencyMs} />
@@ -68,7 +68,7 @@ export function TestResultSheet({
           {isLoading ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              {STATUS_TEXT[testStatus] || 'Running test...'}
+              {STATUS_TEXT[testStatus] || 'Running Analysis...'}
             </div>
           ) : result ? (
             <div className="editor-panel p-4 h-full overflow-auto">

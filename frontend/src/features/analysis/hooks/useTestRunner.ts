@@ -85,7 +85,7 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
       });
 
       setTestResult(result);
-      toast.success(`Test completed in ${formatLatency(result.latencyMs)}`);
+      toast.success(`Analysis completed in ${formatLatency(result.latencyMs)}`);
       onSuccess?.(result);
 
       if (analysisId && versionId && result.output) {

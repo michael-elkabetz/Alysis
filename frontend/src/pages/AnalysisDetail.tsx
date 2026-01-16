@@ -362,7 +362,7 @@ export default function AnalysisDetail() {
         <button
           onClick={handleExpandResult}
           className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-4 rounded-l-lg shadow-lg transition-all hover:pr-5 flex flex-col items-center gap-1"
-          aria-label="Expand test result"
+          aria-label="Expand analysis result"
         >
           <Activity className="w-4 h-4" />
           <span className="text-xs font-medium writing-mode-vertical">Result</span>

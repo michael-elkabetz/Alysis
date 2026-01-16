@@ -28,7 +28,7 @@ import BackgroundEffects from '@/layouts/BackgroundEffects';
 import { AppsGrid } from '@/features/analysis/components/AppsGrid';
 import { CreateAnalysisDialog } from '@/features/analysis/components/CreateAnalysisDialog';
 import { DeleteAppDialog } from '@/features/analysis/components/DeleteDialogs';
-import { MagicHero } from '@/features/analysis/components/MagicHero';
+import { AIHero } from '@/features/analysis/components/AIHero';
 import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/analysis/hooks/useAnalysisApiKey';
 import { toast } from 'sonner';
 
@@ -166,7 +166,7 @@ export default function AnalysesList() {
         {/* Hero Section: Focused on Action */}
         <section className="flex flex-col items-center justify-center space-y-8 pt-8 pb-4">
 
-          <MagicHero 
+          <AIHero 
             vendors={vendorsData?.vendors ?? []}
             modelsByVendor={vendorsData?.modelsByVendor ?? {}}
             vendorKeyStatuses={vendorKeyStatuses}
