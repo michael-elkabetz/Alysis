@@ -17,8 +17,8 @@ COPY src ./src
 COPY drizzle.config.ts ./
 COPY tsconfig.json ./
 
-# Create drizzle migrations folder
-RUN mkdir -p drizzle
+# Copy drizzle migrations folder
+COPY drizzle ./drizzle
 
 # Copy public folder for static file serving
 COPY --link public* ./public/
@@ -35,4 +35,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
 # Run migrations then start server
-CMD ["sh", "-c", "bunx drizzle-kit push && bun run src/index.ts"]
+# Using --force to skip interactive prompts in Docker environment
+CMD ["sh", "-c", "bunx drizzle-kit push --force && bun run src/index.ts"]
