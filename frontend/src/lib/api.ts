@@ -29,24 +29,24 @@ async function fetchApi<T>(
   return response.json();
 }
 
-export type AnalysisStatus = 'draft' | 'active' | 'deprecated';
+export type AppStatus = 'draft' | 'active' | 'deprecated';
 export type ExecutionStatus = 'success' | 'error';
 export type ResponseFormat = 'json' | 'text';
 export type Vendor = 'openai' | 'anthropic' | 'gemini';
 export type Provider = Vendor;
 
-export interface Analysis {
+export interface App {
   id: string;
   name: string;
   description: string | null;
-  status: AnalysisStatus;
+  status: AppStatus;
   activeVersionId: string | null;
   sampleData: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AnalysisWithApiKey extends Analysis {
+export interface AppWithApiKey extends App {
   apiKey: {
     id: string;
     name: string;
@@ -54,7 +54,7 @@ export interface AnalysisWithApiKey extends Analysis {
   };
 }
 
-export interface AnalysisInterfaces {
+export interface AppInterfaces {
   output: {
     type: 'object';
     properties: Record<string, { type: string; description?: string }>;
@@ -68,7 +68,7 @@ export interface PromptVersion {
   analysisId: string;
   version: number;
   systemPrompt: string;
-  interfaces: AnalysisInterfaces | null;
+  interfaces: AppInterfaces | null;
   vendor: Vendor;
   model: string;
   temperature: number;
@@ -98,7 +98,7 @@ export interface ExecutionLog {
   createdAt: string;
 }
 
-export interface AnalysisStats {
+export interface AppStats {
   totalExecutions: number;
   successCount: number;
   errorCount: number;
@@ -107,8 +107,8 @@ export interface AnalysisStats {
 }
 
 export interface GlobalStats {
-  totalAnalyses: number;
-  activeAnalyses: number;
+  totalApps: number;
+  activeApps: number;
   totalExecutions: number;
   successRate: number;
   avgLatencyMs: number;
@@ -168,11 +168,11 @@ export interface ApiKeyInfo {
   lastUsedAt: string | null;
 }
 
-export interface CreateAnalysisDto {
+export interface CreateAppDto {
   name: string;
   description?: string;
   systemPrompt: string;
-  interfaces?: AnalysisInterfaces;
+  interfaces?: AppInterfaces;
   vendor?: Vendor;
   model?: string;
   temperature?: number;
@@ -181,7 +181,7 @@ export interface CreateAnalysisDto {
   sampleData?: string;
 }
 
-export interface UpdateAnalysisDto {
+export interface UpdateAppDto {
   name?: string;
   description?: string;
   sampleData?: string;
@@ -201,61 +201,61 @@ export interface MagicGenerateDto {
 }
 
 export async function magicGenerate(dto: MagicGenerateDto): Promise<MagicGenerateResult> {
-  return fetchApi<MagicGenerateResult>('/api/v1/analyses/magic', {
+  return fetchApi<MagicGenerateResult>('/api/v1/apps/magic', {
     method: 'POST',
     body: JSON.stringify(dto),
   });
 }
 
-export async function createAnalysis(dto: CreateAnalysisDto): Promise<AnalysisWithApiKey> {
-  return fetchApi<AnalysisWithApiKey>('/api/v1/analyses', {
+export async function createApp(dto: CreateAppDto): Promise<AppWithApiKey> {
+  return fetchApi<AppWithApiKey>('/api/v1/apps', {
     method: 'POST',
     body: JSON.stringify(dto),
   });
 }
 
-export async function getAnalyses(search?: string): Promise<Analysis[]> {
+export async function getApps(search?: string): Promise<App[]> {
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   const queryString = params.toString();
-  return fetchApi<Analysis[]>(`/api/v1/analyses${queryString ? `?${queryString}` : ''}`);
+  return fetchApi<App[]>(`/api/v1/apps${queryString ? `?${queryString}` : ''}`);
 }
 
-export async function getAnalysis(id: string): Promise<Analysis> {
-  return fetchApi<Analysis>(`/api/v1/analyses/${id}`);
+export async function getApp(id: string): Promise<App> {
+  return fetchApi<App>(`/api/v1/apps/${id}`);
 }
 
-export async function updateAnalysis(id: string, dto: UpdateAnalysisDto): Promise<Analysis> {
-  return fetchApi<Analysis>(`/api/v1/analyses/${id}`, {
+export async function updateApp(id: string, dto: UpdateAppDto): Promise<App> {
+  return fetchApi<App>(`/api/v1/apps/${id}`, {
     method: 'PUT',
     body: JSON.stringify(dto),
   });
 }
 
-export async function deleteAnalysis(id: string): Promise<void> {
-  await fetchApi<{ success: boolean }>(`/api/v1/analyses/${id}`, {
+export async function deleteApp(id: string): Promise<void> {
+  await fetchApi<{ success: boolean }>(`/api/v1/apps/${id}`, {
     method: 'DELETE',
   });
 }
 
-export async function getAnalysisStats(id: string, versionId?: string): Promise<AnalysisStats> {
+export async function getAppStats(id: string, versionId?: string): Promise<AppStats> {
   const params = new URLSearchParams();
   if (versionId) params.set('versionId', versionId);
   const queryString = params.toString();
-  return fetchApi<AnalysisStats>(`/api/v1/analyses/${id}/stats${queryString ? `?${queryString}` : ''}`);
+  return fetchApi<AppStats>(`/api/v1/apps/${id}/stats${queryString ? `?${queryString}` : ''}`);
 }
 
-export async function getVersionCostStats(analysisId: string): Promise<VersionCostStats[]> {
-  return fetchApi<VersionCostStats[]>(`/api/v1/analyses/${analysisId}/cost-stats`);
+export async function getVersionCostStats(appId: string): Promise<VersionCostStats[]> {
+  return fetchApi<VersionCostStats[]>(`/api/v1/apps/${appId}/cost-stats`);
 }
 
-export async function getAnalysisLogs(
+export async function getAppLogs(
   id: string,
   limit = 50,
   offset = 0
 ): Promise<{ logs: ExecutionLog[]; total: number }> {
   return fetchApi<{ logs: ExecutionLog[]; total: number }>(
-    `/api/v1/analyses/${id}/logs?limit=${limit}&offset=${offset}`
+    `/api/v1/apps/${id}/logs?limit=${limit}&offset=${offset}`
   );
 }
 
@@ -269,75 +269,75 @@ export interface CreatePromptVersionDto {
 }
 
 export async function createPromptVersion(
-  analysisId: string,
+  appId: string,
   dto: CreatePromptVersionDto
 ): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts`, {
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts`, {
     method: 'POST',
     body: JSON.stringify(dto),
   });
 }
 
-export async function getPromptVersions(analysisId: string): Promise<PromptVersion[]> {
-  return fetchApi<PromptVersion[]>(`/api/v1/analyses/${analysisId}/prompts`);
+export async function getPromptVersions(appId: string): Promise<PromptVersion[]> {
+  return fetchApi<PromptVersion[]>(`/api/v1/apps/${appId}/prompts`);
 }
 
-export async function getLatestPromptVersion(analysisId: string): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/latest`);
+export async function getLatestPromptVersion(appId: string): Promise<PromptVersion> {
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts/latest`);
 }
 
-export async function getActivePromptVersion(analysisId: string): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/active`);
+export async function getActivePromptVersion(appId: string): Promise<PromptVersion> {
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts/active`);
 }
 
 export async function getPromptVersion(
-  analysisId: string,
+  appId: string,
   promptId: string
 ): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/${promptId}`);
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts/${promptId}`);
 }
 
 export async function publishPromptVersion(
-  analysisId: string,
+  appId: string,
   promptId: string
 ): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/${promptId}/publish`, {
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts/${promptId}/publish`, {
     method: 'POST',
   });
 }
 
 export async function deletePromptVersion(
-  analysisId: string,
+  appId: string,
   promptId: string
 ): Promise<{ success: boolean }> {
-  return fetchApi<{ success: boolean }>(`/api/v1/analyses/${analysisId}/prompts/${promptId}`, {
+  return fetchApi<{ success: boolean }>(`/api/v1/apps/${appId}/prompts/${promptId}`, {
     method: 'DELETE',
   });
 }
 
 export async function updatePromptInterfaces(
-  analysisId: string,
+  appId: string,
   promptId: string,
-  interfaces: AnalysisInterfaces
+  interfaces: AppInterfaces
 ): Promise<PromptVersion> {
-  return fetchApi<PromptVersion>(`/api/v1/analyses/${analysisId}/prompts/${promptId}/interfaces`, {
+  return fetchApi<PromptVersion>(`/api/v1/apps/${appId}/prompts/${promptId}/interfaces`, {
     method: 'PUT',
     body: JSON.stringify({ interfaces }),
   });
 }
 
 export async function testPromptVersion(
-  analysisId: string,
+  appId: string,
   promptId: string,
   input: Record<string, unknown>
 ): Promise<ExecutionLog> {
-  return fetchApi<ExecutionLog>(`/api/v1/analyses/${analysisId}/prompts/${promptId}/test`, {
+  return fetchApi<ExecutionLog>(`/api/v1/apps/${appId}/prompts/${promptId}/test`, {
     method: 'POST',
     body: JSON.stringify({ input }),
   });
 }
 
-export interface ExecuteAnalysisResult {
+export interface ExecuteAppResult {
   id: string;
   output: Record<string, unknown> | null;
   status: ExecutionStatus;
@@ -350,11 +350,11 @@ export interface ExecuteAnalysisResult {
   errorMessage: string | null;
 }
 
-export async function executeAnalysis(
-  analysisId: string,
+export async function executeApp(
+  appId: string,
   input: Record<string, unknown>
-): Promise<ExecuteAnalysisResult> {
-  return fetchApi<ExecuteAnalysisResult>(`/api/v1/analyze/${analysisId}`, {
+): Promise<ExecuteAppResult> {
+  return fetchApi<ExecuteAppResult>(`/api/v1/analyze/${appId}`, {
     method: 'POST',
     body: JSON.stringify({ input }),
   });
@@ -391,7 +391,7 @@ export interface TestPromptResult {
 }
 
 export async function testPrompt(dto: TestPromptDto): Promise<TestPromptResult> {
-  return fetchApi<TestPromptResult>('/api/v1/analyses/test-prompt', {
+  return fetchApi<TestPromptResult>('/api/v1/apps/test-prompt', {
     method: 'POST',
     body: JSON.stringify(dto),
   });
@@ -409,16 +409,16 @@ export async function getVendorsAndModels(): Promise<VendorsAndModels> {
   return fetchApi<VendorsAndModels>('/api/v1/clients/vendors');
 }
 
-export interface TestAnalysisPromptDto {
+export interface TestAppPromptDto {
   systemPrompt: string;
   vendor: Vendor;
   model: string;
   input: Record<string, unknown>;
-  analysisId?: string;
+  appId?: string;
   versionId?: string;
 }
 
-export interface TestAnalysisPromptResult {
+export interface TestAppPromptResult {
   output: Record<string, unknown>;
   latencyMs: number;
   tokenUsage: {
@@ -429,24 +429,24 @@ export interface TestAnalysisPromptResult {
   rawResponse: string;
 }
 
-export async function testAnalysisPrompt(
-  dto: TestAnalysisPromptDto
-): Promise<TestAnalysisPromptResult> {
-  return fetchApi<TestAnalysisPromptResult>('/api/v1/analyses/test-prompt', {
+export async function testAppPrompt(
+  dto: TestAppPromptDto
+): Promise<TestAppPromptResult> {
+  return fetchApi<TestAppPromptResult>('/api/v1/apps/test-prompt', {
     method: 'POST',
     body: JSON.stringify(dto),
   });
 }
 
-export async function getAnalysisApiKeys(analysisId: string): Promise<ApiKeyInfo[]> {
-  return fetchApi<ApiKeyInfo[]>(`/api/v1/analyses/${analysisId}/api-keys`);
+export async function getAppApiKeys(appId: string): Promise<ApiKeyInfo[]> {
+  return fetchApi<ApiKeyInfo[]>(`/api/v1/apps/${appId}/api-keys`);
 }
 
-export async function createAnalysisApiKey(
-  analysisId: string,
+export async function createAppApiKey(
+  appId: string,
   name?: string
 ): Promise<{ id: string; name: string; key: string; createdAt: string }> {
-  return fetchApi(`/api/v1/analyses/${analysisId}/api-keys`, {
+  return fetchApi(`/api/v1/apps/${appId}/api-keys`, {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
@@ -494,3 +494,26 @@ export async function deleteVendorKey(vendor: Vendor): Promise<void> {
   });
 }
 
+// Backwards compatibility aliases
+export type Analysis = App;
+export type AnalysisStatus = AppStatus;
+export type AnalysisWithApiKey = AppWithApiKey;
+export type AnalysisInterfaces = AppInterfaces;
+export type AnalysisStats = AppStats;
+export type CreateAnalysisDto = CreateAppDto;
+export type UpdateAnalysisDto = UpdateAppDto;
+export type ExecuteAnalysisResult = ExecuteAppResult;
+export type TestAnalysisPromptDto = TestAppPromptDto;
+export type TestAnalysisPromptResult = TestAppPromptResult;
+
+export const createAnalysis = createApp;
+export const getAnalyses = getApps;
+export const getAnalysis = getApp;
+export const updateAnalysis = updateApp;
+export const deleteAnalysis = deleteApp;
+export const getAnalysisStats = getAppStats;
+export const getAnalysisLogs = getAppLogs;
+export const executeAnalysis = executeApp;
+export const testAnalysisPrompt = testAppPrompt;
+export const getAnalysisApiKeys = getAppApiKeys;
+export const createAnalysisApiKey = createAppApiKey;

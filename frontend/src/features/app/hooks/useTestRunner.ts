@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { testAnalysisPrompt, updatePromptInterfaces, updateAnalysis, type Vendor } from '@/lib/api';
+import { testAppPrompt, updatePromptInterfaces, updateApp, type Vendor } from '@/lib/api';
 import { formatLatency } from '@/lib/utils';
 import { generateInterfacesFromOutput } from '@/lib/type-generators';
 
@@ -21,7 +21,7 @@ interface PromptConfig {
 }
 
 interface UseTestRunnerOptions {
-  analysisId?: string;
+  appId?: string;
   versionId?: string | null;
   initialSampleData?: string | null;
   onSuccess?: (result: TestResult) => void;
@@ -43,7 +43,7 @@ interface UseTestRunnerReturn {
 }
 
 export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunnerReturn {
-  const { analysisId, versionId, initialSampleData, onSuccess, onError } = options;
+  const { appId, versionId, initialSampleData, onSuccess, onError } = options;
   const queryClient = useQueryClient();
 
   const [sampleData, setSampleData] = useState(initialSampleData || '');
@@ -75,12 +75,12 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
       setTestResult(null);
       setIsResultPanelOpen(true);
 
-      const result = await testAnalysisPrompt({
+      const result = await testAppPrompt({
         systemPrompt: config.systemPrompt,
         vendor: config.vendor,
         model: config.model,
         input: { data: sampleData },
-        analysisId,
+        appId,
         versionId: versionId || undefined,
       });
 
@@ -88,24 +88,24 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
       toast.success(`Analysis completed in ${formatLatency(result.latencyMs)}`);
       onSuccess?.(result);
 
-      if (analysisId && versionId && result.output) {
+      if (appId && versionId && result.output) {
         setTestStatus('generating_interfaces');
         const interfaces = generateInterfacesFromOutput(result.output);
-        await updatePromptInterfaces(analysisId, versionId, interfaces);
-        queryClient.invalidateQueries({ queryKey: ['prompts', analysisId] });
+        await updatePromptInterfaces(appId, versionId, interfaces);
+        queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
       }
 
-      if (analysisId && sampleData.trim()) {
-        updateAnalysis(analysisId, { sampleData })
+      if (appId && sampleData.trim()) {
+        updateApp(appId, { sampleData })
           .then(() => {
-            queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] });
+            queryClient.invalidateQueries({ queryKey: ['app', appId] });
           })
           .catch(() => {});
       }
 
-      if (analysisId) {
-        void queryClient.invalidateQueries({ queryKey: ['analysis-stats', analysisId] });
-        void queryClient.invalidateQueries({ queryKey: ['version-cost-stats', analysisId] });
+      if (appId) {
+        void queryClient.invalidateQueries({ queryKey: ['app-stats', appId] });
+        void queryClient.invalidateQueries({ queryKey: ['version-cost-stats', appId] });
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Test failed');
@@ -116,7 +116,7 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
       setIsTesting(false);
       setTestStatus('idle');
     }
-  }, [sampleData, analysisId, versionId, queryClient, onSuccess, onError]);
+  }, [sampleData, appId, versionId, queryClient, onSuccess, onError]);
 
   const clearResult = useCallback(() => {
     setTestResult(null);

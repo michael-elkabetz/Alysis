@@ -13,8 +13,8 @@ import {
 import {
   getVendorsAndModels,
   getVendorKeyStatuses,
-  createAnalysis,
-  type CreateAnalysisDto,
+  createApp,
+  type CreateAppDto,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,7 +67,7 @@ export function CreateAppDialog({
     vendor: '',
     model: '',
   });
-  const [savedAnalysis, setSavedAnalysis] = useState<{
+  const [savedApp, setSavedApp] = useState<{
     id: string;
     name: string;
     apiKey: { key: string };
@@ -154,9 +154,9 @@ export function CreateAppDialog({
 
 
   const createMutation = useMutation({
-    mutationFn: (dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown>; _sampleData?: string }) => createAnalysis(dto),
+    mutationFn: (dto: CreateAppDto & { _testOutput?: Record<string, unknown>; _sampleData?: string }) => createApp(dto),
     onSuccess: (response, variables) => {
-      setSavedAnalysis({
+      setSavedApp({
         id: response.id,
         name: response.name,
         apiKey: response.apiKey,
@@ -188,7 +188,7 @@ export function CreateAppDialog({
       return;
     }
     const generatedInterfaces = testResult?.output ? generateInterfacesFromOutput(testResult.output) : undefined;
-    const dto: CreateAnalysisDto & { _testOutput?: Record<string, unknown>; _sampleData?: string } = {
+    const dto: CreateAppDto & { _testOutput?: Record<string, unknown>; _sampleData?: string } = {
       name: formData.name,
       description: formData.description || undefined,
       systemPrompt: formData.systemPrompt,
@@ -203,8 +203,8 @@ export function CreateAppDialog({
   };
 
   const copyApiKey = () => {
-    if (savedAnalysis?.apiKey.key) {
-      navigator.clipboard.writeText(savedAnalysis.apiKey.key);
+    if (savedApp?.apiKey.key) {
+      navigator.clipboard.writeText(savedApp.apiKey.key);
       setCopied(true);
       toast.success('API key copied');
       setTimeout(() => setCopied(false), 2000);
@@ -212,8 +212,8 @@ export function CreateAppDialog({
   };
 
   const getEndpointUrl = () => {
-    if (!savedAnalysis) return '';
-    return `${window.location.origin}/api/v1/analyze/${savedAnalysis.id}`;
+    if (!savedApp) return '';
+    return `${window.location.origin}/api/v1/analyze/${savedApp.id}`;
   };
 
   const copyEndpoint = () => {
@@ -227,7 +227,7 @@ export function CreateAppDialog({
   };
 
   const handleClose = () => {
-    if (savedAnalysis) {
+    if (savedApp) {
       onSuccess();
     }
     setStep('configure');
@@ -240,7 +240,7 @@ export function CreateAppDialog({
     });
     setSampleData('');
     clearResult();
-    setSavedAnalysis(null);
+    setSavedApp(null);
     setCopied(false);
     setCopiedEndpoint(false);
     onOpenChange(false);
@@ -257,17 +257,17 @@ export function CreateAppDialog({
   const currentStepIndex = steps.findIndex(s => s.id === step);
 
   const generateCurl = () => {
-    if (!savedAnalysis) return '';
+    if (!savedApp) return '';
     
-    const inputData = savedAnalysis.sampleData 
-      ? JSON.stringify({ input: { data: savedAnalysis.sampleData } })
+    const inputData = savedApp.sampleData 
+      ? JSON.stringify({ input: { data: savedApp.sampleData } })
       : '{"input": {"data": "your data here"}}';
     
     const escapedData = inputData.replace(/'/g, "'\\''");
     
-    return `curl -X POST "${window.location.origin}/api/v1/analyze/${savedAnalysis.id}" \\
+    return `curl -X POST "${window.location.origin}/api/v1/analyze/${savedApp.id}" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: ${savedAnalysis.apiKey.key}" \\
+  -H "X-API-Key: ${savedApp.apiKey.key}" \\
   -d '${escapedData}'`;
   };
 
@@ -276,7 +276,7 @@ export function CreateAppDialog({
     toast.success('cURL command copied');
   };
 
-  if (savedAnalysis) {
+  if (savedApp) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-lg bg-card border-border">
@@ -291,10 +291,10 @@ export function CreateAppDialog({
             <div className="overflow-hidden">
               <Label className="text-xs text-muted-foreground uppercase tracking-wider">App Name</Label>
               <p className="mt-1.5 text-lg font-semibold text-foreground break-words">
-                {savedAnalysis.name}
+                {savedApp.name}
               </p>
               <p className="text-sm text-muted-foreground font-mono break-all">
-                {savedAnalysis.id}
+                {savedApp.id}
               </p>
             </div>
 
@@ -318,7 +318,7 @@ export function CreateAppDialog({
                 </Button>
               </div>
               <code className="block px-3 py-2.5 bg-[#f5f0e8] rounded-xl font-mono text-sm text-foreground break-all">
-                {savedAnalysis.apiKey.key}
+                {savedApp.apiKey.key}
               </code>
             </div>
 
@@ -609,5 +609,3 @@ export function CreateAppDialog({
     </Dialog>
   );
 }
-
-export const CreateAnalysisDialog = CreateAppDialog;

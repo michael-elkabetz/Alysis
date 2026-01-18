@@ -1,9 +1,9 @@
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { getAnalysisApiKeys, regenerateApiKey } from '@/lib/api';
+import { getAppApiKeys, regenerateApiKey } from '@/lib/api';
 
-export async function fetchAndRegenerateApiKey(analysisId: string): Promise<string | null> {
-  const keys = await getAnalysisApiKeys(analysisId);
+export async function fetchAndRegenerateApiKey(appId: string): Promise<string | null> {
+  const keys = await getAppApiKeys(appId);
   if (keys.length > 0) {
     const result = await regenerateApiKey(keys[0].id);
     return result.key;
@@ -11,18 +11,18 @@ export async function fetchAndRegenerateApiKey(analysisId: string): Promise<stri
   return null;
 }
 
-export function generateCurlCommand(analysisId: string, apiKey: string): string {
-  return `curl -X POST "${window.location.origin}/api/v1/analyze/${analysisId}" \\
+export function generateCurlCommand(appId: string, apiKey: string): string {
+  return `curl -X POST "${window.location.origin}/api/v1/analyze/${appId}" \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: ${apiKey}" \\
   -d '{"input": {"data": "your data here"}}'`;
 }
 
-interface UseAnalysisApiKeyOptions {
-  analysisId: string;
+interface UseAppApiKeyOptions {
+  appId: string;
 }
 
-interface UseAnalysisApiKeyReturn {
+interface UseAppApiKeyReturn {
   apiKey: string | null;
   isLoadingKey: boolean;
   copyApiKey: () => Promise<void>;
@@ -30,7 +30,7 @@ interface UseAnalysisApiKeyReturn {
   copyAppId: () => void;
 }
 
-export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): UseAnalysisApiKeyReturn {
+export function useAppApiKey({ appId }: UseAppApiKeyOptions): UseAppApiKeyReturn {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoadingKey, setIsLoadingKey] = useState(true);
 
@@ -40,7 +40,7 @@ export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): Use
     const loadApiKey = async () => {
       try {
         setIsLoadingKey(true);
-        const key = await fetchAndRegenerateApiKey(analysisId);
+        const key = await fetchAndRegenerateApiKey(appId);
         if (!cancelled && key) {
           setApiKey(key);
         }
@@ -57,7 +57,7 @@ export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): Use
     return () => {
       cancelled = true;
     };
-  }, [analysisId]);
+  }, [appId]);
 
   const copyApiKey = useCallback(async () => {
     if (apiKey) {
@@ -67,7 +67,7 @@ export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): Use
     }
 
     try {
-      const key = await fetchAndRegenerateApiKey(analysisId);
+      const key = await fetchAndRegenerateApiKey(appId);
       if (key) {
         setApiKey(key);
         navigator.clipboard.writeText(key);
@@ -78,14 +78,14 @@ export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): Use
     } catch {
       toast.error('Failed to get API key');
     }
-  }, [analysisId, apiKey]);
+  }, [appId, apiKey]);
 
   const copyCurl = useCallback(async () => {
     let keyToUse = apiKey;
     
     if (!keyToUse) {
       try {
-        keyToUse = await fetchAndRegenerateApiKey(analysisId);
+        keyToUse = await fetchAndRegenerateApiKey(appId);
         if (keyToUse) {
           setApiKey(keyToUse);
         }
@@ -96,18 +96,18 @@ export function useAnalysisApiKey({ analysisId }: UseAnalysisApiKeyOptions): Use
     }
 
     if (keyToUse) {
-      const curl = generateCurlCommand(analysisId, keyToUse);
+      const curl = generateCurlCommand(appId, keyToUse);
       navigator.clipboard.writeText(curl);
       toast.success('cURL copied');
     } else {
       toast.error('No API key found');
     }
-  }, [analysisId, apiKey]);
+  }, [appId, apiKey]);
 
   const copyAppId = useCallback(() => {
-    navigator.clipboard.writeText(analysisId);
+    navigator.clipboard.writeText(appId);
     toast.success('App ID copied');
-  }, [analysisId]);
+  }, [appId]);
 
   return {
     apiKey,

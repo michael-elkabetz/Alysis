@@ -6,7 +6,7 @@ import {
   publishPromptVersion,
   type PromptVersion,
   type Vendor,
-  type Analysis,
+  type App,
 } from '@/lib/api';
 
 interface PromptState {
@@ -16,8 +16,8 @@ interface PromptState {
 }
 
 interface UsePromptEditorOptions {
-  analysisId: string;
-  analysis: Analysis | undefined;
+  appId: string;
+  app: App | undefined;
   versions: PromptVersion[];
   modelsByVendor: Record<string, { id: string; displayName: string }[]>;
 }
@@ -45,8 +45,8 @@ function inferVendorFromModel(model: string): string {
 }
 
 export function usePromptEditor({
-  analysisId,
-  analysis,
+  appId,
+  app,
   versions,
   modelsByVendor,
 }: UsePromptEditorOptions): UsePromptEditorReturn {
@@ -67,9 +67,9 @@ export function usePromptEditor({
   );
 
   useEffect(() => {
-    if (analysis && versions.length > 0) {
+    if (app && versions.length > 0) {
       const activeVersion =
-        versions.find((v) => v.id === analysis.activeVersionId) || versions[0];
+        versions.find((v) => v.id === app.activeVersionId) || versions[0];
 
       const vendor = inferVendorFromModel(activeVersion.model);
 
@@ -80,7 +80,7 @@ export function usePromptEditor({
       });
       setSelectedVersionId(activeVersion.id);
     }
-  }, [analysis, versions]);
+  }, [app, versions]);
 
   useEffect(() => {
     const vendorModels = modelsByVendor[promptState.vendor];
@@ -119,9 +119,9 @@ export function usePromptEditor({
       setIsSaving(true);
 
       if (isViewingOldVersion && selectedVersionId) {
-        await publishPromptVersion(analysisId, selectedVersionId);
-        queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] });
-        queryClient.invalidateQueries({ queryKey: ['prompts', analysisId] });
+        await publishPromptVersion(appId, selectedVersionId);
+        queryClient.invalidateQueries({ queryKey: ['app', appId] });
+        queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
         toast.success('Version activated');
       } else {
         if (!hasChanges()) {
@@ -129,14 +129,14 @@ export function usePromptEditor({
           return;
         }
         
-        const newVersion = await createPromptVersion(analysisId, {
+        const newVersion = await createPromptVersion(appId, {
           systemPrompt: promptState.systemPrompt,
           vendor: promptState.vendor as Vendor,
           model: promptState.model,
         });
-        await publishPromptVersion(analysisId, newVersion.id);
-        queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] });
-        queryClient.invalidateQueries({ queryKey: ['prompts', analysisId] });
+        await publishPromptVersion(appId, newVersion.id);
+        queryClient.invalidateQueries({ queryKey: ['app', appId] });
+        queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
         toast.success('New version saved');
       }
     } catch (e) {
@@ -144,7 +144,7 @@ export function usePromptEditor({
     } finally {
       setIsSaving(false);
     }
-  }, [analysisId, isViewingOldVersion, selectedVersionId, promptState, queryClient, hasChanges]);
+  }, [appId, isViewingOldVersion, selectedVersionId, promptState, queryClient, hasChanges]);
 
   const updateVendor = useCallback((vendor: string) => {
     setPromptState(prev => ({ ...prev, vendor }));

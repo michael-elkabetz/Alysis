@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { executionRepository } from './execution.repository'
-import { analysisRepository } from '../analysis/analysis.repository'
+import { appRepository } from '../app/app.repository'
 import { promptService } from '../prompt/prompt.service'
 import { getClient, inferVendor } from '../../clients'
 import { getModelPricing } from '../../config/model-pricing'
@@ -60,11 +60,11 @@ export const executionService = {
   },
 
   async execute(analysisId: string, dto: ExecuteAnalysisDto, callerService?: string): Promise<ExecutionLog> {
-    const analysis = await analysisRepository.findById(analysisId)
-    if (!analysis) {
+    const app = await appRepository.findById(analysisId)
+    if (!app) {
       throw new Error(`App not found: ${analysisId}`)
     }
-    if (analysis.status !== 'active') {
+    if (app.status !== 'active') {
       throw new Error(`App is not active: ${analysisId}`)
     }
 
@@ -266,12 +266,12 @@ export const executionService = {
   },
 
   async getGlobalStats(): Promise<GlobalStats> {
-    const analysisCount = await analysisRepository.count()
+    const appCount = await appRepository.count()
     const execStats = await executionRepository.getGlobalStats()
 
     return {
-      totalAnalyses: analysisCount.total,
-      activeAnalyses: analysisCount.active,
+      totalApps: appCount.total,
+      activeApps: appCount.active,
       totalExecutions: execStats.totalExecutions,
       successRate: execStats.totalExecutions > 0 ? (execStats.successCount / execStats.totalExecutions) * 100 : 0,
       avgLatencyMs: execStats.avgLatencyMs,

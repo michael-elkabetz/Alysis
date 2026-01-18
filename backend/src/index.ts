@@ -4,15 +4,18 @@ import { cors } from '@elysiajs/cors'
 import { staticPlugin } from '@elysiajs/static'
 
 import { healthController } from './modules/health/health.controller'
-import { analysisController } from './modules/analysis/analysis.controller'
+import { appController } from './modules/app/app.controller'
 import { promptController } from './modules/prompt/prompt.controller'
 import { executionController } from './modules/execution/execution.controller'
 import { apiKeyController } from './modules/api-key/apikey.controller'
+import { apiKeyService } from './modules/api-key/apikey.service'
 import { vendorKeyController } from './modules/vendor-key/vendorkey.controller'
 import { devToolsController } from './modules/dev-tools/dev-tools.controller'
 import { clientController } from './clients/client.controller'
 
 const PORT = process.env.PORT ?? 3001
+
+await apiKeyService.initialize()
 
 const app = new Elysia()
   .use(cors({
@@ -58,7 +61,7 @@ const app = new Elysia()
   }))
   .use(healthController)
   .use(clientController)
-  .use(analysisController)
+  .use(appController)
   .use(promptController)
   .use(executionController)
   .use(apiKeyController)

@@ -8,17 +8,17 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { getAnalysisLogs, type AnalysisInterfaces } from '@/lib/api';
+import { getAppLogs, type AppInterfaces } from '@/lib/api';
 import { Separator } from '@/components/ui/separator';
 import { generateInterface, generateInterfaceFromStoredInterfaces } from '@/lib/type-generators';
 
 interface DevSpaceSheetProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  analysisName: string;
-  analysisId: string;
+  appName: string;
+  appId: string;
   apiKey?: string;
-  interfaces?: AnalysisInterfaces | null;
+  interfaces?: AppInterfaces | null;
   latestTestResult?: Record<string, unknown> | null;
   sampleData?: string;
 }
@@ -26,8 +26,8 @@ interface DevSpaceSheetProps {
 export function DevSpaceSheet({
   isOpen,
   onOpenChange,
-  analysisName,
-  analysisId,
+  appName,
+  appId,
   apiKey,
   interfaces,
   latestTestResult,
@@ -37,7 +37,7 @@ export function DevSpaceSheet({
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const endpointUrl = `${window.location.origin}/api/v1/analyze/${analysisId}`;
+  const endpointUrl = `${window.location.origin}/api/v1/analyze/${appId}`;
 
   const generateCurl = () => {
     const inputData = sampleData 
@@ -59,7 +59,7 @@ export function DevSpaceSheet({
     }
 
     if (latestTestResult && Object.keys(latestTestResult).length > 0) {
-      setInterfaceCode(generateInterface(analysisName, latestTestResult));
+      setInterfaceCode(generateInterface(appName, latestTestResult));
       return;
     }
 
@@ -68,17 +68,17 @@ export function DevSpaceSheet({
     const fetchFromLogs = async () => {
       setIsLoading(true);
       try {
-        const { logs } = await getAnalysisLogs(analysisId, 1, 0);
+        const { logs } = await getAppLogs(appId, 1, 0);
         const successLog = logs.find(log => log.status === 'success' && log.output);
         
         if (successLog?.output && Object.keys(successLog.output).length > 0) {
-          setInterfaceCode(generateInterface(analysisName, successLog.output));
+          setInterfaceCode(generateInterface(appName, successLog.output));
         } else if (interfaces) {
-          setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
+          setInterfaceCode(generateInterfaceFromStoredInterfaces(appName, interfaces));
         }
       } catch {
         if (interfaces) {
-          setInterfaceCode(generateInterfaceFromStoredInterfaces(analysisName, interfaces));
+          setInterfaceCode(generateInterfaceFromStoredInterfaces(appName, interfaces));
         }
       } finally {
         setIsLoading(false);
@@ -87,7 +87,7 @@ export function DevSpaceSheet({
     };
 
     fetchFromLogs();
-  }, [isOpen, latestTestResult, analysisId, analysisName, hasFetched, interfaces]);
+  }, [isOpen, latestTestResult, appId, appName, hasFetched, interfaces]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);

@@ -4,7 +4,7 @@ import { getVersionCostStats } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface VersionCostStatsProps {
-  analysisId: string;
+  appId: string;
   selectedVersionId?: string | null;
 }
 
@@ -15,10 +15,10 @@ function formatCost(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-export function VersionCostStats({ analysisId, selectedVersionId }: VersionCostStatsProps) {
+export function VersionCostStats({ appId, selectedVersionId }: VersionCostStatsProps) {
   const { data: costStats, isLoading } = useQuery({
-    queryKey: ['version-cost-stats', analysisId],
-    queryFn: () => getVersionCostStats(analysisId),
+    queryKey: ['version-cost-stats', appId],
+    queryFn: () => getVersionCostStats(appId),
     refetchInterval: 60000,
   });
 

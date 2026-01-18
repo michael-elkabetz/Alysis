@@ -5,7 +5,7 @@ import { executionService } from '../execution/execution.service'
 const VendorEnum = t.Union([t.Literal('openai'), t.Literal('anthropic'), t.Literal('gemini')])
 const ResponseFormatEnum = t.Union([t.Literal('json'), t.Literal('text')])
 
-export const promptController = new Elysia({ prefix: '/api/v1/analyses/:id/prompts' })
+export const promptController = new Elysia({ prefix: '/api/v1/apps/:id/prompts' })
   .post('/', async ({ params, body, set }) => {
     try {
       const version = await promptService.create(params.id, body)

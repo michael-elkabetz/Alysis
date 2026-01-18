@@ -149,8 +149,8 @@ export interface AnalysisStats {
 }
 
 export interface GlobalStats {
-  totalAnalyses: number
-  activeAnalyses: number
+  totalApps: number
+  activeApps: number
   totalExecutions: number
   successRate: number
   avgLatencyMs: number

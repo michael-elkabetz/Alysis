@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { promptRepository } from './prompt.repository'
-import { analysisRepository } from '../analysis/analysis.repository'
+import { appRepository } from '../app/app.repository'
 import { inferVendor } from '../../clients'
 import { generateInterfaces } from '../../shared/interfaces'
 import type { PromptVersion, CreatePromptVersionDto, AnalysisInterfaces } from '../../shared/types'
@@ -44,15 +44,15 @@ export const promptService = {
   },
 
   async getActive(analysisId: string): Promise<PromptVersion | null> {
-    const analysis = await analysisRepository.findById(analysisId)
-    if (!analysis?.activeVersionId) return null
-    return promptRepository.findByIdOnly(analysis.activeVersionId)
+    const app = await appRepository.findById(analysisId)
+    if (!app?.activeVersionId) return null
+    return promptRepository.findByIdOnly(app.activeVersionId)
   },
 
   async publish(analysisId: string, promptId: string): Promise<PromptVersion | null> {
     const version = await promptRepository.publish(analysisId, promptId)
     if (!version) return null
-    await analysisRepository.update(analysisId, { activeVersionId: promptId })
+    await appRepository.update(analysisId, { activeVersionId: promptId })
     return version
   },
 
@@ -62,8 +62,8 @@ export const promptService = {
       return { success: false, error: 'Cannot delete the last version' }
     }
 
-    const analysis = await analysisRepository.findById(analysisId)
-    const isActive = analysis?.activeVersionId === promptId
+    const app = await appRepository.findById(analysisId)
+    const isActive = app?.activeVersionId === promptId
 
     const deleted = await promptRepository.delete(analysisId, promptId)
     if (!deleted) {
@@ -73,7 +73,7 @@ export const promptService = {
     if (isActive) {
       const latest = await promptRepository.findLatest(analysisId)
       if (latest) {
-        await analysisRepository.update(analysisId, { activeVersionId: latest.id })
+        await appRepository.update(analysisId, { activeVersionId: latest.id })
       }
     }
 

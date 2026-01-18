@@ -2,15 +2,16 @@ import { db, schema } from '../../db'
 import { eq, desc, like, sql } from 'drizzle-orm'
 import type { Analysis, AnalysisStatus } from '../../shared/types'
 
-export const analysisRepository = {
+export const appRepository = {
   async create(data: {
     id: string
     name: string
     description: string | null
     status: AnalysisStatus
+    sampleData?: string | null
   }): Promise<Analysis> {
     const now = new Date()
-    const [analysis] = await db
+    const [app] = await db
       .insert(schema.analyses)
       .values({
         ...data,
@@ -18,7 +19,7 @@ export const analysisRepository = {
         updatedAt: now,
       })
       .returning()
-    return analysis
+    return app
   },
 
   async findAll(search?: string): Promise<Analysis[]> {
@@ -38,15 +39,15 @@ export const analysisRepository = {
   },
 
   async findById(id: string): Promise<Analysis | null> {
-    const [analysis] = await db
+    const [app] = await db
       .select()
       .from(schema.analyses)
       .where(eq(schema.analyses.id, id))
       .limit(1)
-    return analysis || null
+    return app || null
   },
 
-  async update(id: string, data: Partial<{ name: string; description: string; status: AnalysisStatus; activeVersionId: string }>): Promise<Analysis | null> {
+  async update(id: string, data: Partial<{ name: string; description: string; status: AnalysisStatus; activeVersionId: string; sampleData: string }>): Promise<Analysis | null> {
     const [updated] = await db
       .update(schema.analyses)
       .set({

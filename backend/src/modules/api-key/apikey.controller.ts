@@ -2,14 +2,14 @@ import { Elysia, t } from 'elysia'
 import { apiKeyService } from './apikey.service'
 
 export const apiKeyController = new Elysia({ prefix: '/api/v1' })
-  .get('/analyses/:id/api-keys', async ({ params }) => {
+  .get('/apps/:id/api-keys', async ({ params }) => {
     return apiKeyService.getForAnalysis(params.id)
   }, {
     params: t.Object({ id: t.String() }),
-    detail: { tags: ['API Keys'], summary: 'List API keys for analysis' },
+    detail: { tags: ['API Keys'], summary: 'List API keys for app' },
   })
 
-  .post('/analyses/:id/api-keys', async ({ params, body, set }) => {
+  .post('/apps/:id/api-keys', async ({ params, body, set }) => {
     try {
       const result = await apiKeyService.createForAnalysis(params.id, body.name)
       set.status = 201
@@ -26,7 +26,7 @@ export const apiKeyController = new Elysia({ prefix: '/api/v1' })
   }, {
     params: t.Object({ id: t.String() }),
     body: t.Object({ name: t.Optional(t.String()) }),
-    detail: { tags: ['API Keys'], summary: 'Create API key for analysis' },
+    detail: { tags: ['API Keys'], summary: 'Create API key for app' },
   })
 
   .delete('/api-keys/:keyId', async ({ params, set }) => {

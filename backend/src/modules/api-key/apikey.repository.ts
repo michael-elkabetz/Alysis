@@ -11,6 +11,10 @@ export interface ApiKeyRecord {
 }
 
 export const apiKeyRepository = {
+  async findAll(): Promise<ApiKeyRecord[]> {
+    return db.select().from(schema.apiKeys)
+  },
+
   async create(data: {
     id: string
     name: string

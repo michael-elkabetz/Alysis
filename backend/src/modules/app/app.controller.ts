@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { analysisService } from './analysis.service'
+import { appService } from './app.service'
 import { executionService } from '../execution/execution.service'
 import { DEFAULTS, LIMITS } from '../../shared/constants'
 import { handleControllerError } from '../../utils/http'
@@ -17,10 +17,10 @@ const InterfacesSchema = t.Optional(t.Object({
   }),
 }))
 
-export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
+export const appController = new Elysia({ prefix: '/api/v1/apps' })
   .post('/', async ({ body, set }) => {
     try {
-      const result = await analysisService.create(body)
+      const result = await appService.create(body)
       set.status = 201
       return {
         ...result.analysis,
@@ -51,7 +51,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .post('/magic', async ({ body, set }) => {
     try {
-      return await analysisService.magic(body.description, body.vendor, body.model)
+      return await appService.magic(body.description, body.vendor, body.model)
     } catch (error) {
       return handleControllerError(error, set, 'Failed to generate app config')
     }
@@ -65,25 +65,25 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
   })
 
   .get('/', async ({ query }) => {
-    return analysisService.getAll(query.search)
+    return appService.getAll(query.search)
   }, {
     query: t.Object({ search: t.Optional(t.String()) }),
     detail: { tags: ['Apps'], summary: 'List apps' },
   })
 
   .get('/active', async () => {
-    return analysisService.getActive()
+    return appService.getActive()
   }, {
     detail: { tags: ['Apps'], summary: 'List active apps' },
   })
 
   .get('/:id', async ({ params, set }) => {
-    const analysis = await analysisService.getById(params.id)
-    if (!analysis) {
+    const app = await appService.getById(params.id)
+    if (!app) {
       set.status = 404
       return { error: 'App not found' }
     }
-    return analysis
+    return app
   }, {
     params: t.Object({ id: t.String() }),
     detail: { tags: ['Apps'], summary: 'Get app' },
@@ -91,12 +91,12 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .put('/:id', async ({ params, body, set }) => {
     try {
-      const analysis = await analysisService.update(params.id, body)
-      if (!analysis) {
+      const app = await appService.update(params.id, body)
+      if (!app) {
         set.status = 404
         return { error: 'App not found' }
       }
-      return analysis
+      return app
     } catch (error) {
       return handleControllerError(error, set, 'Failed to update app')
     }
@@ -112,7 +112,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .delete('/:id', async ({ params, set }) => {
     try {
-      const deleted = await analysisService.delete(params.id)
+      const deleted = await appService.delete(params.id)
       if (!deleted) {
         set.status = 404
         return { error: 'App not found' }
@@ -128,12 +128,12 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .post('/:id/activate', async ({ params, set }) => {
     try {
-      const analysis = await analysisService.activate(params.id)
-      if (!analysis) {
+      const app = await appService.activate(params.id)
+      if (!app) {
         set.status = 404
         return { error: 'App not found' }
       }
-      return analysis
+      return app
     } catch (error) {
       return handleControllerError(error, set, 'Failed to activate app')
     }
@@ -143,12 +143,12 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
   })
 
   .post('/:id/deprecate', async ({ params, set }) => {
-    const analysis = await analysisService.deprecate(params.id)
-    if (!analysis) {
+    const app = await appService.deprecate(params.id)
+    if (!app) {
       set.status = 404
       return { error: 'App not found' }
     }
-    return analysis
+    return app
   }, {
     params: t.Object({ id: t.String() }),
     detail: { tags: ['Apps'], summary: 'Deprecate app' },
@@ -184,7 +184,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
 
   .post('/test-prompt', async ({ body, set }) => {
     try {
-      const result = await executionService.testDirect(body, body.analysisId, body.versionId)
+      const result = await executionService.testDirect(body, body.appId, body.versionId)
       if (result.error) {
         set.status = 400
         return { error: result.error, ...result }
@@ -202,7 +202,7 @@ export const analysisController = new Elysia({ prefix: '/api/v1/analyses' })
       temperature: t.Optional(t.Number({ minimum: LIMITS.TEMPERATURE_MIN, maximum: LIMITS.TEMPERATURE_MAX })),
       maxTokens: t.Optional(t.Number({ minimum: 1, maximum: LIMITS.MAX_TOKENS_CEILING })),
       responseFormat: t.Optional(ResponseFormatEnum),
-      analysisId: t.Optional(t.String()),
+      appId: t.Optional(t.String()),
       versionId: t.Optional(t.String()),
     }),
     detail: { tags: ['Apps'], summary: 'Test prompt' },

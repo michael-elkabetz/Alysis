@@ -3,34 +3,34 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Play, Activity, Loader2, Terminal } from 'lucide-react';
 import {
-  getAnalysis,
+  getApp,
   getPromptVersions,
   deletePromptVersion,
   getVendorsAndModels,
-  deleteAnalysis,
-  type AnalysisStats,
+  deleteApp,
+  type AppStats,
   type PromptVersion,
   type Vendor,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import BackgroundEffects from '@/layouts/BackgroundEffects';
-import { StatsGrid } from '@/features/analysis/components/StatsGrid';
-import { PromptEditor } from '@/features/analysis/components/PromptEditor';
-import { DeleteAppDialog, DeleteVersionDialog } from '@/features/analysis/components/DeleteDialogs';
-import { VersionSelector } from '@/features/analysis/components/VersionSelector';
-import { ModelSelector } from '@/features/analysis/components/ModelSelector';
-import { InlineEditField } from '@/features/analysis/components/InlineEditField';
-import { AppActionsMenu } from '@/features/analysis/components/AppActionsMenu';
-import { VersionCostStats } from '@/features/analysis/components/VersionCostStats';
-import { TestResultSheet } from '@/features/analysis/components/TestResultSheet';
-import { DevSpaceSheet } from '@/features/analysis/components/DevSpaceSheet';
-import { useTestRunner } from '@/features/analysis/hooks/useTestRunner';
-import { usePromptEditor } from '@/features/analysis/hooks/usePromptEditor';
-import { useInlineEdit } from '@/features/analysis/hooks/useInlineEdit';
-import { useAnalysisApiKey } from '@/features/analysis/hooks/useAnalysisApiKey';
+import { StatsGrid } from '@/features/app/components/StatsGrid';
+import { PromptEditor } from '@/features/app/components/PromptEditor';
+import { DeleteAppDialog, DeleteVersionDialog } from '@/features/app/components/DeleteDialogs';
+import { VersionSelector } from '@/features/app/components/VersionSelector';
+import { ModelSelector } from '@/features/app/components/ModelSelector';
+import { InlineEditField } from '@/features/app/components/InlineEditField';
+import { AppActionsMenu } from '@/features/app/components/AppActionsMenu';
+import { VersionCostStats } from '@/features/app/components/VersionCostStats';
+import { TestResultSheet } from '@/features/app/components/TestResultSheet';
+import { DevSpaceSheet } from '@/features/app/components/DevSpaceSheet';
+import { useTestRunner } from '@/features/app/hooks/useTestRunner';
+import { usePromptEditor } from '@/features/app/hooks/usePromptEditor';
+import { useInlineEdit } from '@/features/app/hooks/useInlineEdit';
+import { useAppApiKey } from '@/features/app/hooks/useAppApiKey';
 
-export default function AnalysisDetail() {
+export default function AppDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -42,9 +42,9 @@ export default function AnalysisDetail() {
   const [isDevSpaceOpen, setIsDevSpaceOpen] = useState(false);
   const [isDevSpaceCollapsed, setIsDevSpaceCollapsed] = useState(true);
 
-  const { data: analysis, isLoading: isLoadingAnalysis } = useQuery({
-    queryKey: ['analysis', id],
-    queryFn: () => getAnalysis(id!),
+  const { data: app, isLoading: isLoadingApp } = useQuery({
+    queryKey: ['app', id],
+    queryFn: () => getApp(id!),
     enabled: !!id,
   });
 
@@ -73,16 +73,16 @@ export default function AnalysisDetail() {
     updateModel,
     updateSystemPrompt,
   } = usePromptEditor({
-    analysisId: id!,
-    analysis,
+    appId: id!,
+    app,
     versions,
     modelsByVendor,
   });
 
-  const { data: stats } = useQuery<AnalysisStats>({
-    queryKey: ['analysis-stats', id, selectedVersionId],
-    queryFn: () => getAnalysis(id!).then(() => 
-      import('@/lib/api').then(m => m.getAnalysisStats(id!, selectedVersionId ?? undefined))
+  const { data: stats } = useQuery<AppStats>({
+    queryKey: ['app-stats', id, selectedVersionId],
+    queryFn: () => getApp(id!).then(() => 
+      import('@/lib/api').then(m => m.getAppStats(id!, selectedVersionId ?? undefined))
     ),
     enabled: !!id && !!selectedVersionId,
     refetchInterval: 30000,
@@ -100,30 +100,30 @@ export default function AnalysisDetail() {
     setIsResultPanelOpen,
     runTest,
   } = useTestRunner({ 
-    analysisId: id, 
+    appId: id, 
     versionId: selectedVersionId,
-    initialSampleData: analysis?.sampleData,
+    initialSampleData: app?.sampleData,
   });
 
   const nameEdit = useInlineEdit({
-    analysisId: id!,
+    appId: id!,
     field: 'name',
-    initialValue: analysis?.name || '',
+    initialValue: app?.name || '',
     required: true,
   });
 
   const descriptionEdit = useInlineEdit({
-    analysisId: id!,
+    appId: id!,
     field: 'description',
-    initialValue: analysis?.description || '',
+    initialValue: app?.description || '',
   });
 
-  const { apiKey, copyApiKey, copyCurl, copyAppId } = useAnalysisApiKey({ analysisId: id! });
+  const { apiKey, copyApiKey, copyCurl, copyAppId } = useAppApiKey({ appId: id! });
 
   const handleDelete = async () => {
     try {
-      await deleteAnalysis(id!);
-      queryClient.invalidateQueries({ queryKey: ['analyses'] });
+      await deleteApp(id!);
+      queryClient.invalidateQueries({ queryKey: ['apps'] });
       toast.success('App deleted');
       navigate('/');
     } catch (e) {
@@ -137,7 +137,7 @@ export default function AnalysisDetail() {
       setIsDeletingVersion(true);
       await deletePromptVersion(id!, versionToDelete.id);
       queryClient.invalidateQueries({ queryKey: ['prompts', id] });
-      queryClient.invalidateQueries({ queryKey: ['analysis', id] });
+      queryClient.invalidateQueries({ queryKey: ['app', id] });
       toast.success(`Version ${versionToDelete.version} deleted`);
       setVersionToDelete(null);
     } catch (e) {
@@ -179,7 +179,7 @@ export default function AnalysisDetail() {
     setIsDevSpaceCollapsed(false);
   };
 
-  if (isLoadingAnalysis) {
+  if (isLoadingApp) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground">
@@ -190,7 +190,7 @@ export default function AnalysisDetail() {
     );
   }
 
-  if (!analysis) {
+  if (!app) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -221,14 +221,14 @@ export default function AnalysisDetail() {
 
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
           {stats && <StatsGrid stats={stats} />}
-          <VersionCostStats analysisId={id!} selectedVersionId={selectedVersionId} />
+          <VersionCostStats appId={id!} selectedVersionId={selectedVersionId} />
         </div>
 
         <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-6">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <InlineEditField
-                value={analysis.name}
+                value={app.name}
                 isEditing={nameEdit.isEditing}
                 editValue={nameEdit.editValue}
                 inputRef={nameEdit.inputRef}
@@ -242,7 +242,7 @@ export default function AnalysisDetail() {
             </div>
 
             <InlineEditField
-              value={analysis.description || ''}
+              value={app.description || ''}
               isEditing={descriptionEdit.isEditing}
               editValue={descriptionEdit.editValue}
               inputRef={descriptionEdit.inputRef}
@@ -350,8 +350,8 @@ export default function AnalysisDetail() {
       <DevSpaceSheet
         isOpen={isDevSpaceOpen}
         onOpenChange={handleDevSpaceClose}
-        analysisName={analysis.name}
-        analysisId={id!}
+        appName={app.name}
+        appId={id!}
         apiKey={apiKey || undefined}
         interfaces={versions.find(v => v.id === selectedVersionId)?.interfaces}
         latestTestResult={testResult?.output}
@@ -362,7 +362,7 @@ export default function AnalysisDetail() {
         <button
           onClick={handleExpandResult}
           className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-4 rounded-l-lg shadow-lg transition-all hover:pr-5 flex flex-col items-center gap-1"
-          aria-label="Expand analysis result"
+          aria-label="Expand app result"
         >
           <Activity className="w-4 h-4" />
           <span className="text-xs font-medium writing-mode-vertical">Result</span>
@@ -383,7 +383,7 @@ export default function AnalysisDetail() {
       <DeleteAppDialog
         isOpen={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        appName={analysis.name}
+        appName={app.name}
         onConfirm={handleDelete}
       />
 

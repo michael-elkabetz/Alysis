@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Search, Settings } from 'lucide-react';
 import { 
-  getAnalyses, 
-  deleteAnalysis, 
+  getApps, 
+  deleteApp, 
   getVendorsAndModels, 
   getVendorKeyStatuses,
   magicGenerate,
-  type Analysis,
+  type App,
   type Vendor,
 } from '@/lib/api';
 
@@ -25,24 +25,24 @@ import { Input } from '@/components/ui/input';
 import logoImg from '@/assets/logo.png';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import BackgroundEffects from '@/layouts/BackgroundEffects';
-import { AppsGrid } from '@/features/analysis/components/AppsGrid';
-import { CreateAnalysisDialog } from '@/features/analysis/components/CreateAnalysisDialog';
-import { DeleteAppDialog } from '@/features/analysis/components/DeleteDialogs';
-import { AIHero } from '@/features/analysis/components/AIHero';
-import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/analysis/hooks/useAnalysisApiKey';
+import { AppsGrid } from '@/features/app/components/AppsGrid';
+import { CreateAppDialog } from '@/features/app/components/CreateAppDialog';
+import { DeleteAppDialog } from '@/features/app/components/DeleteDialogs';
+import { AIHero } from '@/features/app/components/AIHero';
+import { fetchAndRegenerateApiKey, generateCurlCommand } from '@/features/app/hooks/useAppApiKey';
 import { toast } from 'sonner';
 
-export default function AnalysesList() {
+export default function AppsList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [appToDelete, setAppToDelete] = useState<Analysis | null>(null);
+  const [appToDelete, setAppToDelete] = useState<App | null>(null);
   const [initialDialogValues, setInitialDialogValues] = useState<InitialDialogValues | undefined>(undefined);
 
-  const { data: apps = [], isLoading } = useQuery<Analysis[]>({
-    queryKey: ['analyses'],
-    queryFn: () => getAnalyses(),
+  const { data: apps = [], isLoading } = useQuery<App[]>({
+    queryKey: ['apps'],
+    queryFn: () => getApps(),
   });
 
   const { data: vendorsData } = useQuery({
@@ -77,10 +77,10 @@ export default function AnalysesList() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteAnalysis,
+    mutationFn: deleteApp,
     onSuccess: () => {
       toast.success('App deleted');
-      queryClient.invalidateQueries({ queryKey: ['analyses'] });
+      queryClient.invalidateQueries({ queryKey: ['apps'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -133,7 +133,7 @@ export default function AnalysesList() {
     }
   };
 
-  const filteredApps = apps.filter((app: Analysis) =>
+  const filteredApps = apps.filter((app: App) =>
     app.name.toLowerCase().includes(search.toLowerCase()) ||
     app.description?.toLowerCase().includes(search.toLowerCase())
   );
@@ -142,7 +142,6 @@ export default function AnalysesList() {
     <div className="min-h-screen bg-background text-foreground relative selection:bg-primary/20">
       <BackgroundEffects />
 
-      {/* Modern Header: Glassmorphic, Sticky, Minimal */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/20">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -163,7 +162,6 @@ export default function AnalysesList() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-12 relative z-10 space-y-12">
-        {/* Hero Section: Focused on Action */}
         <section className="flex flex-col items-center justify-center space-y-8 pt-8 pb-4">
 
           <AIHero 
@@ -179,7 +177,6 @@ export default function AnalysesList() {
           />
         </section>
 
-        {/* Content Section with Integrated Search */}
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
              <h2 className="text-xl font-semibold tracking-tight">Your Apps</h2>
@@ -206,7 +203,7 @@ export default function AnalysesList() {
               setInitialDialogValues(undefined);
               setIsCreateDialogOpen(true);
             }}
-            onNavigateToApp={(appId) => navigate(`/analyses/${appId}`)}
+            onNavigateToApp={(appId) => navigate(`/apps/${appId}`)}
             onCopyApiKey={handleCopyApiKey}
             onCopyCurl={handleCopyCurl}
             onDeleteApp={handleDelete}
@@ -214,14 +211,14 @@ export default function AnalysesList() {
         </div>
       </div>
 
-      <CreateAnalysisDialog
+      <CreateAppDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         initialValues={initialDialogValues}
         onSuccess={() => {
           setIsCreateDialogOpen(false);
           setInitialDialogValues(undefined);
-          queryClient.invalidateQueries({ queryKey: ['analyses'] });
+          queryClient.invalidateQueries({ queryKey: ['apps'] });
         }}
       />
 

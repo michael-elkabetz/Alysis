@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { analysisRepository } from './analysis.repository'
+import { appRepository } from './app.repository'
 import { promptRepository } from '../prompt/prompt.repository'
 import { apiKeyService } from '../api-key/apikey.service'
 import { inferVendor, getAllClients, getClient } from '../../clients'
@@ -7,7 +7,7 @@ import { DEFAULTS, ID_PREFIXES } from '../../shared/constants'
 import { generateInterfaces } from '../../shared/interfaces'
 import type { Analysis, CreateAnalysisDto, UpdateAnalysisDto } from '../../shared/types'
 
-function generateAnalysisId(name: string): string {
+function generateAppId(name: string): string {
   const kebab = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -17,12 +17,12 @@ function generateAnalysisId(name: string): string {
   return `${kebab}-${nanoid(5)}`
 }
 
-export const analysisService = {
+export const appService = {
   async create(dto: CreateAnalysisDto): Promise<{ analysis: Analysis; apiKey: { id: string; name: string; key: string } }> {
-    const id = generateAnalysisId(dto.name)
+    const id = generateAppId(dto.name)
     const now = new Date()
 
-    const analysis = await analysisRepository.create({
+    const analysis = await appRepository.create({
       id,
       name: dto.name,
       description: dto.description || null,
@@ -46,7 +46,7 @@ export const analysisService = {
       publishedAt: now,
     })
 
-    await analysisRepository.update(id, { activeVersionId: versionId })
+    await appRepository.update(id, { activeVersionId: versionId })
 
     const apiKey = await apiKeyService.createForAnalysis(id)
 
@@ -109,43 +109,44 @@ Do not include markdown formatting like \`\`\`json. Return only the raw JSON.`
   },
 
   async getAll(search?: string): Promise<Analysis[]> {
-    return analysisRepository.findAll(search)
+    return appRepository.findAll(search)
   },
 
   async getActive(): Promise<Analysis[]> {
-    return analysisRepository.findActive()
+    return appRepository.findActive()
   },
 
   async getById(id: string): Promise<Analysis | null> {
-    return analysisRepository.findById(id)
+    return appRepository.findById(id)
   },
 
   async update(id: string, dto: UpdateAnalysisDto): Promise<Analysis | null> {
-    const analysis = await analysisRepository.findById(id)
-    if (!analysis) return null
-    return analysisRepository.update(id, dto)
+    const app = await appRepository.findById(id)
+    if (!app) return null
+    return appRepository.update(id, dto)
   },
 
   async delete(id: string): Promise<boolean> {
-    const analysis = await analysisRepository.findById(id)
-    if (!analysis) return false
-    return analysisRepository.delete(id)
+    const app = await appRepository.findById(id)
+    if (!app) return false
+    apiKeyService.deleteByAppId(id)
+    return appRepository.delete(id)
   },
 
   async activate(id: string): Promise<Analysis | null> {
-    const analysis = await analysisRepository.findById(id)
-    if (!analysis) return null
-    if (!analysis.activeVersionId) {
-      throw new Error('Cannot activate analysis without a published prompt version')
+    const app = await appRepository.findById(id)
+    if (!app) return null
+    if (!app.activeVersionId) {
+      throw new Error('Cannot activate app without a published prompt version')
     }
-    return analysisRepository.update(id, { status: 'active' })
+    return appRepository.update(id, { status: 'active' })
   },
 
   async deprecate(id: string): Promise<Analysis | null> {
-    return analysisRepository.update(id, { status: 'deprecated' })
+    return appRepository.update(id, { status: 'deprecated' })
   },
 
   async getCount(): Promise<{ total: number; active: number }> {
-    return analysisRepository.count()
+    return appRepository.count()
   },
 }

@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { apiKeyRepository } from './apikey.repository'
+import { apiKeyCache } from './apikey.cache'
 
 function generateApiKey(): string {
   return `aak_${nanoid(32)}`
@@ -22,6 +23,11 @@ export interface CreateApiKeyResult {
 }
 
 export const apiKeyService = {
+  async initialize(): Promise<void> {
+    const allKeys = await apiKeyRepository.findAll()
+    apiKeyCache.populate(allKeys)
+  },
+
   async createForAnalysis(analysisId: string, name?: string): Promise<CreateApiKeyResult> {
     const key = generateApiKey()
     const keyHash = await hashApiKey(key)
@@ -29,6 +35,7 @@ export const apiKeyService = {
     const keyName = name || `API Key for ${analysisId}`
 
     const apiKey = await apiKeyRepository.create({ id, name: keyName, keyHash, analysisId })
+    apiKeyCache.set(apiKey)
 
     return {
       id: apiKey.id,
@@ -45,6 +52,7 @@ export const apiKeyService = {
     const id = `ak-${nanoid(10)}`
 
     const apiKey = await apiKeyRepository.create({ id, name, keyHash, analysisId: null })
+    apiKeyCache.set(apiKey)
 
     return {
       id: apiKey.id,
@@ -57,7 +65,7 @@ export const apiKeyService = {
 
   async validate(key: string, analysisId?: string): Promise<{ valid: boolean; name?: string; isGlobal?: boolean }> {
     const keyHash = await hashApiKey(key)
-    const apiKey = await apiKeyRepository.findByHash(keyHash)
+    const apiKey = apiKeyCache.get(keyHash)
 
     if (!apiKey) {
       return { valid: false }
@@ -85,6 +93,10 @@ export const apiKeyService = {
   },
 
   async delete(keyId: string): Promise<boolean> {
+    const existing = await apiKeyRepository.findById(keyId)
+    if (existing) {
+      apiKeyCache.delete(existing.keyHash)
+    }
     return apiKeyRepository.delete(keyId)
   },
 
@@ -92,11 +104,14 @@ export const apiKeyService = {
     const existing = await apiKeyRepository.findById(keyId)
     if (!existing) return null
 
+    const oldKeyHash = existing.keyHash
     const newKey = generateApiKey()
     const newKeyHash = await hashApiKey(newKey)
 
     const updated = await apiKeyRepository.updateKeyHash(keyId, newKeyHash)
     if (!updated) return null
+
+    apiKeyCache.updateHash(oldKeyHash, newKeyHash)
 
     return {
       id: updated.id,
@@ -105,5 +120,9 @@ export const apiKeyService = {
       analysisId: updated.analysisId,
       createdAt: updated.createdAt,
     }
+  },
+
+  deleteByAppId(appId: string): void {
+    apiKeyCache.deleteByAppId(appId)
   },
 }

@@ -133,11 +133,13 @@ export function AIHero({
                   <TypeAnimation
                     sequence={[
                       'an Email Tone Analyzer',
-                      3000,
+                      2000,
                       'a Resume Skills Extractor',
-                      3000,
+                      2000,
                       'a Product Review Summarizer',
-                      3000,
+                      2000,
+                      'anything - just paste your data',
+                      2000,
                     ]}
                     wrapper="span"
                     speed={50}

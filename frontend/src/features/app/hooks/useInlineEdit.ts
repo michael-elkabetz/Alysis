@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { updateAnalysis } from '@/lib/api';
+import { updateApp } from '@/lib/api';
 
 interface UseInlineEditOptions {
-  analysisId: string;
+  appId: string;
   field: 'name' | 'description';
   initialValue: string;
   required?: boolean;
@@ -23,7 +23,7 @@ interface UseInlineEditReturn {
 }
 
 export function useInlineEdit({
-  analysisId,
+  appId,
   field,
   initialValue,
   required = false,
@@ -55,18 +55,18 @@ export function useInlineEdit({
     }
 
     try {
-      await updateAnalysis(analysisId, {
+      await updateApp(appId, {
         [field]: trimmedValue || undefined,
       });
-      queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] });
-      queryClient.invalidateQueries({ queryKey: ['analyses'] });
+      queryClient.invalidateQueries({ queryKey: ['app', appId] });
+      queryClient.invalidateQueries({ queryKey: ['apps'] });
       setIsEditing(false);
       toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} updated`);
       onSuccess?.();
     } catch (e) {
       toast.error((e as Error).message);
     }
-  }, [analysisId, field, editValue, required, queryClient, onSuccess]);
+  }, [appId, field, editValue, required, queryClient, onSuccess]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
