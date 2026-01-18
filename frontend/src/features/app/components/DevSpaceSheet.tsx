@@ -111,71 +111,71 @@ export function DevSpaceSheet({
 
         <div className="flex-1 overflow-auto p-6 space-y-6">
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Code2 className="w-4 h-4" />
-              API Endpoint
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-amber-700" />
+                API Endpoint
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => copyToClipboard(endpointUrl, 'Endpoint')}
+                className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
+            </div>
             <div className="editor-panel p-3">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-foreground overflow-x-auto">
-                  POST {endpointUrl}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyToClipboard(endpointUrl, 'Endpoint')}
-                  className="shrink-0 h-8 w-8"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
+              <code className="text-sm font-mono text-foreground overflow-x-auto">
+                POST {endpointUrl}
+              </code>
             </div>
           </div>
 
           <Separator />
 
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Key className="w-4 h-4" />
-              Authentication
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-700" />
+                Authentication
+              </h3>
+              {apiKey && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => copyToClipboard(`X-API-Key: ${apiKey}`, 'API Key header')}
+                  className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
             <div className="editor-panel p-3">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-foreground break-all">
-                  X-API-Key: {apiKey || 'YOUR_API_KEY'}
-                </code>
-                {apiKey && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(`X-API-Key: ${apiKey}`, 'API Key header')}
-                    className="shrink-0 h-8 w-8"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
+              <code className="text-sm font-mono text-foreground break-all">
+                X-API-Key: {apiKey || 'YOUR_API_KEY'}
+              </code>
             </div>
           </div>
 
           <Separator />
 
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Terminal className="w-4 h-4" />
-              cURL
-            </h3>
-            <div className="relative editor-panel max-h-[200px]">
-              <div className="absolute right-2 top-2 z-10">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyToClipboard(generateCurl(), 'cURL command')}
-                  className="h-8 w-8 bg-background/50 hover:bg-background"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-amber-700" />
+                cURL
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => copyToClipboard(generateCurl(), 'cURL command')}
+                className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <div className="editor-panel max-h-[200px]">
               <pre className="p-3 overflow-auto text-xs font-mono text-foreground whitespace-pre-wrap break-all max-h-[200px]">
                 {generateCurl()}
               </pre>
@@ -185,10 +185,22 @@ export function DevSpaceSheet({
           <Separator />
 
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Braces className="w-4 h-4" />
-              Response Interface
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Braces className="w-4 h-4 text-amber-700" />
+                Response Interface
+              </h3>
+              {!isLoading && interfaceCode && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => copyToClipboard(interfaceCode, 'Interface')}
+                  className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
 
             {isLoading && (
               <div className="editor-panel p-4 flex items-center justify-center gap-2 text-muted-foreground">
@@ -198,17 +210,7 @@ export function DevSpaceSheet({
             )}
 
             {!isLoading && interfaceCode && (
-              <div className="relative editor-panel max-h-[230px]">
-                <div className="absolute right-2 top-2 z-10">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(interfaceCode, 'Interface')}
-                    className="h-8 w-8 bg-background/50 hover:bg-background"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
+              <div className="editor-panel max-h-[230px]">
                 <pre className="p-3 overflow-auto text-xs font-mono text-foreground max-h-[230px]">
                   {interfaceCode}
                 </pre>

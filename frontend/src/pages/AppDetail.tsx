@@ -66,6 +66,7 @@ export default function AppDetail() {
     promptState,
     selectedVersionId,
     latestVersion,
+    isSelectedDifferentFromActive,
     isSaving,
     handleSelectVersion,
     handleSave,
@@ -320,18 +321,18 @@ export default function AppDetail() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={isSaving || !promptState.systemPrompt.trim()}
+              disabled={isSaving || (!isSelectedDifferentFromActive && !promptState.systemPrompt.trim())}
               className="btn-primary gap-2"
             >
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
+                  {isSelectedDifferentFromActive ? 'Activating...' : 'Saving...'}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  Save
+                  {isSelectedDifferentFromActive ? 'Activate' : 'Save'}
                 </>
               )}
             </Button>

@@ -29,6 +29,7 @@ interface UsePromptEditorReturn {
   selectedVersion: PromptVersion | undefined;
   latestVersion: PromptVersion | undefined;
   isViewingOldVersion: boolean;
+  isSelectedDifferentFromActive: boolean;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
   handleSelectVersion: (version: PromptVersion) => void;
@@ -64,6 +65,9 @@ export function usePromptEditor({
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
   const isViewingOldVersion = Boolean(
     selectedVersionId && latestVersion && selectedVersionId !== latestVersion.id
+  );
+  const isSelectedDifferentFromActive = Boolean(
+    selectedVersionId && app?.activeVersionId && selectedVersionId !== app.activeVersionId
   );
 
   useEffect(() => {
@@ -118,7 +122,7 @@ export function usePromptEditor({
     try {
       setIsSaving(true);
 
-      if (isViewingOldVersion && selectedVersionId) {
+      if (isSelectedDifferentFromActive && selectedVersionId) {
         await publishPromptVersion(appId, selectedVersionId);
         queryClient.invalidateQueries({ queryKey: ['app', appId] });
         queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
@@ -144,7 +148,7 @@ export function usePromptEditor({
     } finally {
       setIsSaving(false);
     }
-  }, [appId, isViewingOldVersion, selectedVersionId, promptState, queryClient, hasChanges]);
+  }, [appId, isSelectedDifferentFromActive, selectedVersionId, promptState, queryClient, hasChanges]);
 
   const updateVendor = useCallback((vendor: string) => {
     setPromptState(prev => ({ ...prev, vendor }));
@@ -167,6 +171,7 @@ export function usePromptEditor({
     selectedVersion,
     latestVersion,
     isViewingOldVersion,
+    isSelectedDifferentFromActive,
     isSaving,
     hasUnsavedChanges,
     handleSelectVersion,
