@@ -32,6 +32,9 @@ export const promptService = {
   },
 
   async getById(analysisId: string, promptId: string): Promise<PromptVersion | null> {
+    if (!promptId || promptId === 'undefined' || promptId === 'null') {
+      return null
+    }
     return promptRepository.findById(analysisId, promptId)
   },
 
@@ -45,11 +48,16 @@ export const promptService = {
 
   async getActive(analysisId: string): Promise<PromptVersion | null> {
     const app = await appRepository.findById(analysisId)
-    if (!app?.activeVersionId) return null
+    if (!app?.activeVersionId || app.activeVersionId === 'undefined' || app.activeVersionId === 'null') {
+      return null
+    }
     return promptRepository.findByIdOnly(app.activeVersionId)
   },
 
   async publish(analysisId: string, promptId: string): Promise<PromptVersion | null> {
+    if (!promptId || promptId === 'undefined' || promptId === 'null') {
+      return null
+    }
     const version = await promptRepository.publish(analysisId, promptId)
     if (!version) return null
     await appRepository.update(analysisId, { activeVersionId: promptId })
@@ -81,6 +89,9 @@ export const promptService = {
   },
 
   async updateInterfaces(analysisId: string, promptId: string, interfaces: AnalysisInterfaces): Promise<PromptVersion | null> {
+    if (!promptId || promptId === 'undefined' || promptId === 'null') {
+      return null
+    }
     return promptRepository.updateInterfaces(analysisId, promptId, interfaces)
   },
 }
