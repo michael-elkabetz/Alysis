@@ -40,7 +40,6 @@ export function DynamicSchemaForm({
   
   const passwordIndex = propertiesArray.findIndex(([key]) => key === 'password');
   const warehouseIndex = propertiesArray.findIndex(([key]) => key === 'warehouse');
-  const schemaIndex = propertiesArray.findIndex(([key]) => key === 'schema');
   
   if (passwordIndex !== -1 && warehouseIndex !== -1) {
     [propertiesArray[passwordIndex], propertiesArray[warehouseIndex]] = 

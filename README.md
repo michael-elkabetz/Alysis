@@ -16,7 +16,7 @@ Build, manage, and run AI-powered analysis apps with ease.
 
 **Alysis** is a self-hosted platform for creating and executing AI analysis applications. It combines the best of LiteLLM and LangFuse — giving you prompt management, multi-provider AI support, and observability in one platform.
 
-Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose them as secure API endpoints — all with built-in versioning, logging, and statistics.
+Define your prompts (or generate them with AI), connect to OpenAI, Anthropic, or Google Gemini, attach tools like databases or HTTP calls, and expose secure API endpoints — all with built-in versioning, logging, and statistics.
 
 ![Alysis Platform Details](alysis.gif)
 
@@ -31,6 +31,11 @@ Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose 
 - **Version Comparison** — Compare latency and pricing across different prompt versions
 - **Publish When Ready** — Once satisfied, turn your prompt into a production API endpoint
 
+### AI App Generation
+- **Describe your app** — Paste a short description and let Alysis draft the name, prompt, and sample data
+- **Provider-aware** — Choose OpenAI, Anthropic, or Gemini and a model before generating
+- **Human-in-the-loop** — Review and edit the generated configuration before saving
+
 ### For Developers: Simple Integration
 - **No AI Client Code Required** — Don't manage OpenAI/Anthropic/Gemini SDKs yourself
 - **Send Data → Get Analysis** — Your only job: pass your data to the API and receive structured analysis
@@ -44,6 +49,12 @@ Define your prompts, connect to OpenAI, Anthropic, or Google Gemini, and expose 
 - **Vendor Key Management** — Store AI provider keys securely or use environment variables
 - **Execution Logs** — Complete audit trail of all requests and responses
 - **Docker Ready** — One command to deploy the entire stack
+
+### Tools & Data Sources
+- **Built-in connectors** — Snowflake, PostgreSQL, and HTTP tools included out of the box
+- **Reusable connections** — Create tool instances once and attach them to multiple apps
+- **Per-app usage config** — Define queries or request parameters per app
+- **Automatic input enrichment** — Tool results are injected as `_tool_<toolName>` keys during tests and executions
 
 ---
 
@@ -62,6 +73,7 @@ Your stack is now running:
 | Service      | URL                        |
 | ------------ | -------------------------- |
 | **Frontend** | http://localhost:80        |
+| **Tool Catalog** | http://localhost:80/tools |
 | **Backend**  | http://localhost:3001      |
 | **API Docs** | http://localhost:3001/docs |
 | **Postgres** | localhost:5432             |
@@ -99,7 +111,10 @@ cd frontend && npm install && npm run dev
 
 The frontend is built with a modern, feature-based architecture for maximum maintainability:
 
-- **Feature-Based Organization** — Modular components organized by domain (analysis, execution, etc.)
+- **Feature-Based Organization** — Modular components organized by domain (apps, prompts, tools, execution)
+- **AI App Generator** — Turn descriptions into ready-to-edit app configs
+- **Tool Catalog** — Browse built-in tools and manage connections
+- **Per-App Tool Usage** — Attach tools and test queries/requests per app
 - **Responsive Design** — Mobile-optimized layouts with adaptive UI components
 - **Real-Time Updates** — TanStack Query for automatic data synchronization
 - **Accessible Components** — Built on Radix UI primitives for WCAG compliance
@@ -111,6 +126,39 @@ The frontend is built with a modern, feature-based architecture for maximum main
 ---
 
 ## API Usage
+
+### AI App Generation (Magic)
+
+Use AI to generate an initial app configuration from a short description.
+
+```
+POST /api/v1/apps/magic
+```
+
+**Request:**
+
+```json
+{
+  "description": "Summarize customer support tickets into themes",
+  "vendor": "openai",
+  "model": "gpt-5.2"
+}
+```
+
+**Response:**
+
+```json
+{
+  "name": "support-theme-summarizer",
+  "description": "Summarize support ticket themes",
+  "systemPrompt": "You are an expert analyst that...",
+  "sampleData": "I need help resetting my password..."
+}
+```
+
+Use the response to create an app via `POST /api/v1/apps` (edit the fields as needed before saving).
+
+### Execute App
 
 Once you've created and activated an app through the UI, use this endpoint to execute it:
 
@@ -154,6 +202,24 @@ curl -X POST http://localhost:3001/api/v1/analyze/e-comm-G9fDp \
   -H "X-API-Key: aak_xxxx..." \
   -d '{"input": {"data": "I love this product!"}}'
 ```
+
+### Tools & Data Sources (Core Endpoints)
+
+- `GET /api/v1/tool-definitions` — list available tools
+- `POST /api/v1/tool-instances` — create a reusable tool connection
+- `PUT /api/v1/apps/:id/tools/instance/:instanceId` — attach a tool to an app
+- `POST /api/v1/apps/:id/tools/:usageId/execute` — execute a tool for an app
+
+Attach a tool instance to an app:
+
+```json
+{
+  "enabled": true,
+  "usageConfig": { "query": "select * from orders limit 10" }
+}
+```
+
+Tool results are injected into app inputs as `_tool_<toolName>` keys during tests and executions.
 
 Full API documentation available at `/docs` (Swagger UI).
 
@@ -211,13 +277,17 @@ Access Dev Space by clicking the terminal icon in the analysis detail view.
 ├── backend/                  # Bun + Elysia API
 │   ├── src/
 │   │   ├── clients/          # AI provider clients (OpenAI, Anthropic, Gemini)
-│   │   ├── modules/          # Feature modules (analysis, prompt, execution, etc.)
-│   │   │   ├── analysis/     # Analysis domain (controller, service, repository)
+│   │   ├── modules/          # Feature modules (apps, prompts, tools, execution)
+│   │   │   ├── app/          # App management
 │   │   │   ├── prompt/       # Prompt versioning domain
 │   │   │   ├── execution/    # Execution logs domain
 │   │   │   ├── api-key/      # API key management
 │   │   │   ├── vendor-key/   # Vendor API key management
-│   │   │   └── dev-tools/    # Developer tools
+│   │   │   ├── tool-definition/ # Tool catalog and schemas
+│   │   │   ├── tool-instance/   # Tool connections
+│   │   │   ├── app-tool-usage/  # Per-app tool configuration
+│   │   │   ├── tool-execution/  # Tool executors (sql/http)
+│   │   │   └── dev-tools/       # Developer tools
 │   │   ├── db/               # Drizzle schema & migrations
 │   │   ├── config/           # Configuration (model pricing, etc.)
 │   │   ├── shared/           # Shared types & interfaces
@@ -227,12 +297,12 @@ Access Dev Space by clicking the terminal icon in the analysis detail view.
 ├── frontend/                 # React 19 App
 │   ├── src/
 │   │   ├── features/         # Feature-based organization
-│   │   │   └── analysis/     # Analysis feature module
-│   │   │       ├── components/ # AppCard, PromptEditor, StatsGrid, DevSpaceSheet, etc.
+│   │   │   └── app/          # App feature module (AIHero, PromptEditor, ToolUsagePanel)
+│   │   │       ├── components/ # AppCard, PromptEditor, ToolUsagePanel, DevSpaceSheet, etc.
 │   │   │       └── hooks/    # useTestRunner, usePromptEditor, useInlineEdit, etc.
 │   │   ├── components/ui/    # shadcn/ui components (40+ components)
 │   │   ├── layouts/          # Layout components (BackgroundEffects)
-│   │   ├── pages/            # Route pages (AnalysesList, AnalysisDetail)
+│   │   ├── pages/            # Route pages (AppsList, AppDetail, ToolCatalog)
 │   │   ├── hooks/            # Shared hooks (useRelativeTime, useMobile)
 │   │   └── lib/              # Utilities (api.ts, type-generators.ts)
 │   └── Dockerfile
@@ -243,13 +313,16 @@ Access Dev Space by clicking the terminal icon in the analysis detail view.
 
 ## Database Schema
 
-| Table             | Description                                            |
-| ----------------- | ------------------------------------------------------ |
-| `analyses`        | Analysis apps with name, description, status, and sample data |
-| `prompt_versions` | Versioned prompts with model config and interfaces     |
-| `execution_logs`  | Request/response audit trail with token usage          |
-| `api_keys`        | Per-app API keys for authentication                    |
-| `vendor_api_keys` | Stored AI provider keys (encrypted)                    |
+| Table              | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `analyses`         | Apps with name, description, status, and sample data            |
+| `prompt_versions`  | Versioned prompts with model config and interfaces              |
+| `tool_definitions` | Tool catalog with config and usage schemas                      |
+| `tool_instances`   | Saved tool connections and configs                              |
+| `app_tool_usages`  | Per-app tool usage settings                                     |
+| `execution_logs`   | Request/response audit trail with token usage                   |
+| `api_keys`         | Per-app API keys for authentication                             |
+| `vendor_api_keys`  | Stored AI provider keys (encrypted)                             |
 
 ---
 

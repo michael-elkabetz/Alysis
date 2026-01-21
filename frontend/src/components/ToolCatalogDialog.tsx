@@ -175,28 +175,22 @@ export function ToolCatalogDialog({
         }
         if (typeof responseData === 'string' && responseData.length > 0) {
           const isHtml = responseData.trim().startsWith('<');
-          return { 
-            language: (isHtml ? 'html' : 'plaintext') as const, 
-            value: responseData 
-          };
+          const language = isHtml ? 'html' : 'plaintext';
+          return { language, value: responseData };
         }
       }
       
       if (typeof rawBody === 'string' && rawBody.length > 0) {
         const isHtml = rawBody.trim().startsWith('<');
-        return { 
-          language: (isHtml ? 'html' : 'plaintext') as const, 
-          value: rawBody 
-        };
+        const language = isHtml ? 'html' : 'plaintext';
+        return { language, value: rawBody };
       }
     }
     
     if (typeof testResult.data === 'string' && testResult.data.length > 0) {
       const isHtml = testResult.data.trim().startsWith('<');
-      return { 
-        language: (isHtml ? 'html' : 'plaintext') as const, 
-        value: testResult.data 
-      };
+      const language = isHtml ? 'html' : 'plaintext';
+      return { language, value: testResult.data };
     }
     
     return { 
