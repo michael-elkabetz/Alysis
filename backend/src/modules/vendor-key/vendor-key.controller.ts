@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { vendorKeyService } from './vendorkey.service'
+import { vendorKeyService } from './vendor-key.service'
 
 export const vendorKeyController = new Elysia({ prefix: '/api/v1/vendor-keys' })
   .get('/', async () => {

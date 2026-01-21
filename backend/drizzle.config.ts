@@ -5,6 +5,6 @@ export default defineConfig({
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgres://alysis:alysis_dev@localhost:5432/alysis',
+    url: process.env.DATABASE_URL || 'postgres:
   },
 });

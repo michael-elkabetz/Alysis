@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import { appRepository } from './app.repository'
 import { promptRepository } from '../prompt/prompt.repository'
-import { apiKeyService } from '../api-key/apikey.service'
+import { apiKeyService } from '../api-key/api-key.service'
 import { inferVendor, getAllClients, getClient } from '../../clients'
 import { DEFAULTS, ID_PREFIXES } from '../../shared/constants'
 import { generateInterfaces } from '../../shared/interfaces'

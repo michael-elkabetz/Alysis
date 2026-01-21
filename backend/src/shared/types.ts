@@ -2,6 +2,71 @@ export type AnalysisStatus = 'draft' | 'active' | 'deprecated'
 export type ExecutionStatus = 'success' | 'error'
 export type ResponseFormat = 'json' | 'text'
 export type Vendor = 'openai' | 'anthropic' | 'gemini'
+export type ToolType = 'snowflake' | 'postgres'
+
+export interface AppToolUsage {
+  snowflake?: {
+    enabled: boolean
+    query: string
+  }
+  postgres?: {
+    enabled: boolean
+    query: string
+  }
+}
+
+export interface SnowflakeConfig {
+  account: string
+  user: string
+  warehouse: string
+  database: string
+  schema?: string
+  role: string
+  privateKey?: string
+  privateKeyPassword?: string
+  password?: string
+}
+
+export interface PostgresConfig {
+  host: string
+  port: number
+  database: string
+  user: string
+  password?: string
+}
+
+export interface ToolConfig {
+  id: string
+  toolType: ToolType
+  config: SnowflakeConfig | PostgresConfig
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface SnowflakeMaskedConfig {
+  account?: string
+  user?: string
+  warehouse?: string
+  database?: string
+  schema?: string
+  role?: string
+}
+
+export interface PostgresMaskedConfig {
+  host?: string
+  port?: number
+  database?: string
+  user?: string
+}
+
+export type ToolConfigMaskedConfig = SnowflakeMaskedConfig | PostgresMaskedConfig
+
+export interface ToolConfigStatus {
+  toolType: ToolType
+  configured: boolean
+  maskedConfig: ToolConfigMaskedConfig | null
+  updatedAt: Date | null
+}
 
 export interface Analysis {
   id: string
@@ -10,6 +75,7 @@ export interface Analysis {
   status: AnalysisStatus
   activeVersionId: string | null
   sampleData: string | null
+  toolUsage: AppToolUsage | null
   createdAt: Date
   updatedAt: Date
 }
@@ -90,6 +156,7 @@ export interface UpdateAnalysisDto {
   name?: string
   description?: string
   sampleData?: string
+  toolUsage?: AppToolUsage
 }
 
 export interface CreatePromptVersionDto {
@@ -179,3 +246,5 @@ export interface AnalysisCostStats {
   totalCost: number
   versionStats: VersionCostStats[]
 }
+
+export type { ErrorType } from './constants'

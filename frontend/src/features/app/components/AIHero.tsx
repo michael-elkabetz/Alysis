@@ -66,6 +66,15 @@ export function AIHero({
     onGenerate({ description, vendor, model });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (description.trim() && vendor && !isGenerating) {
+        handleGenerate();
+      }
+    }
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto mb-16 relative z-20">
       <div className="flex items-center justify-end mb-4">
@@ -110,6 +119,7 @@ export function AIHero({
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder=""
             aria-label="Describe the AI app you want to build"
             className="w-full min-h-[120px] resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/50 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 p-5 leading-relaxed relative z-10"
@@ -159,7 +169,9 @@ export function AIHero({
                 <SelectValue placeholder="Provider" />
               </SelectTrigger>
               <SelectContent>
-                {vendors.map((v) => (
+                {vendors.filter((v) =>
+                  vendorKeyStatuses?.some((status) => status.vendor === v.id && status.configured)
+                ).map((v) => (
                   <SelectItem key={v.id} value={v.id}>{v.displayName}</SelectItem>
                 ))}
               </SelectContent>

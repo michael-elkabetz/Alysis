@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Play, Activity, Loader2, Terminal } from 'lucide-react';
@@ -7,6 +7,7 @@ import {
   getPromptVersions,
   deletePromptVersion,
   getVendorsAndModels,
+  getVendorKeyStatuses,
   deleteApp,
   type AppStats,
   type PromptVersion,
@@ -25,6 +26,7 @@ import { AppActionsMenu } from '@/features/app/components/AppActionsMenu';
 import { VersionCostStats } from '@/features/app/components/VersionCostStats';
 import { TestResultSheet } from '@/features/app/components/TestResultSheet';
 import { DevSpaceSheet } from '@/features/app/components/DevSpaceSheet';
+import { ToolUsagePanel } from '@/features/app/components/ToolUsagePanel';
 import { useTestRunner } from '@/features/app/hooks/useTestRunner';
 import { usePromptEditor } from '@/features/app/hooks/usePromptEditor';
 import { useInlineEdit } from '@/features/app/hooks/useInlineEdit';
@@ -59,8 +61,26 @@ export default function AppDetail() {
     queryFn: getVendorsAndModels,
   });
 
-  const vendors = vendorsData?.vendors ?? [];
-  const modelsByVendor = vendorsData?.modelsByVendor ?? {};
+  const { data: vendorKeyStatuses } = useQuery({
+    queryKey: ['vendor-key-statuses'],
+    queryFn: getVendorKeyStatuses,
+  });
+
+  const vendors = vendorsData?.vendors?.filter((vendor) =>
+    vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
+  ) ?? [];
+  
+  const modelsByVendor = useMemo(() => {
+    if (!vendorKeyStatuses || !vendorsData?.modelsByVendor) return {};
+    const result: Record<string, Array<{ id: string; displayName: string }>> = {};
+    Object.entries(vendorsData.modelsByVendor).forEach(([vendorId, models]) => {
+      const isConfigured = vendorKeyStatuses.some((v) => v.vendor === vendorId && v.configured);
+      if (isConfigured) {
+        result[vendorId] = models;
+      }
+    });
+    return result;
+  }, [vendorKeyStatuses, vendorsData]);
 
   const {
     promptState,
@@ -291,6 +311,8 @@ export default function AppDetail() {
           onSampleDataChange={setSampleData}
         />
 
+        <ToolUsagePanel appId={id!} />
+
         <div className="flex items-center justify-between gap-3">
           <Button
             onClick={() => setIsDevSpaceOpen(true)}
@@ -315,7 +337,7 @@ export default function AppDetail() {
               ) : (
                 <>
                   <Play className="w-4 h-4" />
-                  Test
+                  Execute
                 </>
               )}
             </Button>

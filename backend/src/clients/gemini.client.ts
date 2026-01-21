@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai'
 import type { AIClient, AIClientConfig } from './base'
 import { ClientError } from './base'
 import type { AIResponse, ClientModel } from '../shared/types'
-import { vendorKeyService } from '../modules/vendor-key/vendorkey.service'
+import { vendorKeyService } from '../modules/vendor-key/vendor-key.service'
 
 const GEMINI_MODELS: ClientModel[] = [
   { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', contextWindow: 1000000, maxOutput: 64000 },
@@ -11,7 +11,7 @@ const GEMINI_MODELS: ClientModel[] = [
 
 export class GeminiClient implements AIClient {
   name = 'gemini' as const
-  displayName = 'Google Gemini'
+  displayName = 'Google'
 
   private async getClient(): Promise<GoogleGenAI> {
     const apiKey = await vendorKeyService.getKeyForVendor('gemini')

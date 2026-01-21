@@ -10,13 +10,12 @@ export const clientController = new Elysia({ prefix: '/api/v1/clients' })
 
   .get('/vendors', async () => {
     const clients = await getAllClients()
-    const availableClients = clients.filter((c) => c.available)
-    const vendors = availableClients.map((c) => ({
+    const vendors = clients.map((c) => ({
       id: c.name,
       displayName: c.displayName,
     }))
     const modelsByVendor: Record<string, Array<{ id: string; displayName: string }>> = {}
-    for (const client of availableClients) {
+    for (const client of clients) {
       modelsByVendor[client.name] = client.models.map((m) => ({
         id: m.id,
         displayName: m.name,

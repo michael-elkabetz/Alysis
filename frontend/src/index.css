@@ -402,3 +402,36 @@
   writing-mode: vertical-rl;
   text-orientation: mixed;
 }
+
+.bg-effect-primary {
+  background: radial-gradient(circle, hsl(35 50% 80% / 0.4) 0%, transparent 70%);
+  filter: blur(80px);
+}
+
+.bg-effect-secondary {
+  background: radial-gradient(circle, hsl(353 53% 31% / 0.06) 0%, transparent 70%);
+  filter: blur(100px);
+}
+
+.bg-effect-tertiary {
+  background: radial-gradient(circle, hsl(30 27% 66% / 0.15) 0%, transparent 70%);
+  filter: blur(120px);
+}
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, hsl(30 27% 66% / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(30 27% 66% / 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.bg-divider-line {
+  background: linear-gradient(90deg, transparent, hsl(30 27% 66% / 0.4), transparent);
+}
+
+.bg-noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.animate-delay-neg-3 {
+  animation-delay: -3s;
+}

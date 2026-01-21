@@ -2,20 +2,60 @@ import { Elysia } from 'elysia'
 import { swagger } from '@elysiajs/swagger'
 import { cors } from '@elysiajs/cors'
 import { staticPlugin } from '@elysiajs/static'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import postgres from 'postgres'
+import { db } from './db'
 
 import { healthController } from './modules/health/health.controller'
 import { appController } from './modules/app/app.controller'
 import { promptController } from './modules/prompt/prompt.controller'
 import { executionController } from './modules/execution/execution.controller'
-import { apiKeyController } from './modules/api-key/apikey.controller'
-import { apiKeyService } from './modules/api-key/apikey.service'
-import { vendorKeyController } from './modules/vendor-key/vendorkey.controller'
+import { apiKeyController } from './modules/api-key/api-key.controller'
+import { apiKeyService } from './modules/api-key/api-key.service'
+import { vendorKeyController } from './modules/vendor-key/vendor-key.controller'
+import { toolConfigController } from './modules/tool-config/tool-config.controller'
+import { toolDefinitionController } from './modules/tool-definition/tool-definition.controller'
+import { toolDefinitionService } from './modules/tool-definition/tool-definition.service'
+import { toolInstanceController } from './modules/tool-instance/tool-instance.controller'
+import { appToolUsageController } from './modules/app-tool-usage/app-tool-usage.controller'
 import { devToolsController } from './modules/dev-tools/dev-tools.controller'
 import { clientController } from './clients/client.controller'
 
 const PORT = process.env.PORT ?? 3001
 
+if (process.env.DATABASE_URL) {
+  try {
+    const client = postgres(process.env.DATABASE_URL, { max: 1 })
+    
+    const checkResult = await client`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'analyses'
+      )
+    `
+    const isInitialized = checkResult[0]?.exists ?? false
+    
+    if (!isInitialized) {
+      console.log('Database not initialized. Running initialization from init.sql...')
+      const initSqlPath = join(process.cwd(), 'src', 'db', 'init.sql')
+      const initSql = readFileSync(initSqlPath, 'utf-8')
+      
+      await client.unsafe(initSql)
+      console.log('Database initialization completed successfully')
+    } else {
+      console.log('Database already initialized. Skipping initialization.')
+    }
+    
+    await client.end()
+  } catch (error) {
+    console.error('Failed to initialize database:', error)
+  }
+}
+
 await apiKeyService.initialize()
+await toolDefinitionService.initialize()
 
 const app = new Elysia()
   .use(cors({
@@ -38,6 +78,10 @@ const app = new Elysia()
         { name: 'Clients', description: 'AI client information' },
         { name: 'API Keys', description: 'API key management' },
         { name: 'Vendor Keys', description: 'Vendor API key management' },
+        { name: 'Tool Configs', description: 'Tool configuration management (Snowflake, etc.)' },
+        { name: 'Tool Definitions', description: 'Tool definition catalog management' },
+        { name: 'Tool Instances', description: 'Tool instance connection management' },
+        { name: 'App Tool Usage', description: 'Per-app tool configuration' },
         { name: 'DevTools', description: 'Developer tools' },
       ],
       components: {
@@ -66,6 +110,10 @@ const app = new Elysia()
   .use(executionController)
   .use(apiKeyController)
   .use(vendorKeyController)
+  .use(toolConfigController)
+  .use(toolDefinitionController)
+  .use(toolInstanceController)
+  .use(appToolUsageController)
   .use(devToolsController)
   .listen(PORT)
 

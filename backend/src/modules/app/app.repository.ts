@@ -1,6 +1,6 @@
 import { db, schema } from '../../db'
 import { eq, desc, like, sql } from 'drizzle-orm'
-import type { Analysis, AnalysisStatus } from '../../shared/types'
+import type { Analysis, AnalysisStatus, AppToolUsage } from '../../shared/types'
 
 export const appRepository = {
   async create(data: {
@@ -47,7 +47,7 @@ export const appRepository = {
     return app || null
   },
 
-  async update(id: string, data: Partial<{ name: string; description: string; status: AnalysisStatus; activeVersionId: string; sampleData: string }>): Promise<Analysis | null> {
+  async update(id: string, data: Partial<{ name: string; description: string; status: AnalysisStatus; activeVersionId: string; sampleData: string; toolUsage: AppToolUsage }>): Promise<Analysis | null> {
     const [updated] = await db
       .update(schema.analyses)
       .set({

@@ -7,7 +7,7 @@ const NotFound = () => {
     <div className="min-h-screen flex items-center justify-center noise-overlay">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[20%] left-[30%] w-[400px] h-[400px] bg-[hsl(175_100%_50%)] rounded-full blur-[200px] opacity-10 animate-float" />
-        <div className="absolute bottom-[20%] right-[20%] w-[300px] h-[300px] bg-[hsl(260_60%_50%)] rounded-full blur-[200px] opacity-10 animate-float" style={{ animationDelay: '-3s' }} />
+        <div className="absolute bottom-[20%] right-[20%] w-[300px] h-[300px] bg-[hsl(260_60%_50%)] rounded-full blur-[200px] opacity-10 animate-float animate-delay-neg-3" />
       </div>
 
       <div className="relative z-10 text-center px-4">

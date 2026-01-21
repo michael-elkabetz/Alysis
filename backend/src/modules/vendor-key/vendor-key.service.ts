@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { vendorKeyRepository } from './vendorkey.repository'
+import { vendorKeyRepository } from './vendor-key.repository'
 import type { Vendor, VendorKeyStatus } from '../../shared/types'
 
 function encodeKey(key: string): string {

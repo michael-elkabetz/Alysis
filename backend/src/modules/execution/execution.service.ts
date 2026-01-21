@@ -2,10 +2,12 @@ import { nanoid } from 'nanoid'
 import { executionRepository } from './execution.repository'
 import { appRepository } from '../app/app.repository'
 import { promptService } from '../prompt/prompt.service'
+import { toolConfigService } from '../tool-config/tool-config.service'
+import { appToolUsageService } from '../app-tool-usage/app-tool-usage.service'
 import { getClient, inferVendor } from '../../clients'
 import { getModelPricing } from '../../config/model-pricing'
 import { DEFAULTS, ID_PREFIXES, ERROR_TYPES } from '../../shared/constants'
-import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor, VersionCostStats, ErrorType } from '../../shared/types'
+import type { ExecutionLog, ExecuteAnalysisDto, TestPromptDto, AnalysisStats, GlobalStats, Vendor, VersionCostStats, ErrorType, AppToolUsage } from '../../shared/types'
 
 type ExecuteResult = {
   success: true
@@ -41,6 +43,55 @@ function extractJson(content: string): Record<string, unknown> | null {
   return null
 }
 
+async function fetchToolData(
+  appId: string,
+  toolUsage: AppToolUsage | null | undefined,
+): Promise<Record<string, unknown> | null> {
+  const toolData: Record<string, unknown> = {}
+
+  // Fetch from legacy tool usage (snowflake/postgres in app.toolUsage)
+  if (toolUsage?.snowflake?.enabled && toolUsage.snowflake.query) {
+    try {
+      const result = await toolConfigService.executeQuery(
+        'snowflake',
+        toolUsage.snowflake.query,
+      )
+      toolData._snowflakeData = result.rows
+      toolData._snowflakeRowCount = result.rowCount
+    } catch (error) {
+      // Log but continue
+    }
+  }
+
+  if (toolUsage?.postgres?.enabled && toolUsage.postgres.query) {
+    try {
+      const result = await toolConfigService.executeQuery(
+        'postgres',
+        toolUsage.postgres.query,
+      )
+      toolData._postgresData = result.rows
+      toolData._postgresRowCount = result.rowCount
+    } catch (error) {
+      // Log but continue
+    }
+  }
+
+  // Fetch from new app tool usages (tool instances attached to app)
+  try {
+    const appToolResults = await appToolUsageService.executeAllForApp(appId)
+    for (const [toolName, result] of appToolResults) {
+      if (result.success && result.data !== undefined) {
+        const key = `_tool_${toolName}`.replace(/[^a-zA-Z0-9_]/g, '_')
+        toolData[key] = result.data
+      }
+    }
+  } catch (error) {
+    // Log but continue
+  }
+
+  return Object.keys(toolData).length > 0 ? toolData : null
+}
+
 export const executionService = {
   async executeRequest(
     analysisId: string,
@@ -73,15 +124,29 @@ export const executionService = {
       throw new Error(`No active prompt version for app: ${analysisId}`)
     }
 
-    return this.executeWithPrompt(analysisId, promptVersion.id, promptVersion, dto.input, callerService)
+    const toolData = await fetchToolData(app.id, app.toolUsage)
+
+    const enrichedInput = toolData
+      ? { ...dto.input, ...toolData }
+      : dto.input
+
+    return this.executeWithPrompt(analysisId, promptVersion.id, promptVersion, enrichedInput, callerService)
   },
 
   async testVersion(analysisId: string, promptId: string, input: Record<string, unknown>, callerService?: string): Promise<ExecutionLog> {
+    const app = await appRepository.findById(analysisId)
     const promptVersion = await promptService.getById(analysisId, promptId)
     if (!promptVersion) {
       throw new Error(`Prompt version not found: ${promptId}`)
     }
-    return this.executeWithPrompt(analysisId, promptId, promptVersion, input, callerService)
+
+    // Fetch tool data for the app
+    const toolData = app ? await fetchToolData(app.id, app.toolUsage) : null
+    const enrichedInput = toolData
+      ? { ...input, ...toolData }
+      : input
+
+    return this.executeWithPrompt(analysisId, promptId, promptVersion, enrichedInput, callerService)
   },
 
   async testDirect(dto: TestPromptDto, analysisId?: string, versionId?: string): Promise<{
@@ -95,8 +160,34 @@ export const executionService = {
     const client = getClient(vendorName)
     const startTime = performance.now()
 
+    // Fetch tool data if analysisId is provided
+    let enrichedInput = dto.input
+    if (analysisId) {
+      console.log(`[ExecutionService] Fetching tool data for app: ${analysisId}`)
+      try {
+        const toolData = await appToolUsageService.executeAllForApp(analysisId)
+        if (toolData && toolData.size > 0) {
+          const toolDataObj: Record<string, unknown> = {}
+          for (const [toolName, result] of toolData) {
+            if (result.success && result.data !== undefined) {
+              const key = `_tool_${toolName}`.replace(/[^a-zA-Z0-9_]/g, '_')
+              toolDataObj[key] = result.data
+            }
+          }
+          if (Object.keys(toolDataObj).length > 0) {
+            enrichedInput = { ...dto.input, ...toolDataObj }
+            console.log(`[ExecutionService] Tool data added to input: ${Object.keys(toolDataObj).join(', ')}`)
+          }
+        } else {
+          console.log(`[ExecutionService] No tool data returned for app: ${analysisId}`)
+        }
+      } catch (error) {
+        console.warn(`[ExecutionService] Failed to fetch tool data: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }
+
     try {
-      const response = await client.complete(dto.systemPrompt, JSON.stringify(dto.input), {
+      const response = await client.complete(dto.systemPrompt, JSON.stringify(enrichedInput), {
         model: dto.model || DEFAULTS.MODEL,
         temperature: dto.temperature ?? DEFAULTS.TEMPERATURE,
         maxTokens: dto.maxTokens || DEFAULTS.MAX_TOKENS,

@@ -33,7 +33,7 @@ export function PromptEditor({
       </div>
 
       <div className="flex flex-col">
-        <Label className="text-sm text-muted-foreground mb-2">Sample Data</Label>
+        <Label className="text-sm text-muted-foreground mb-2">Input</Label>
         <div className="flex-1 editor-panel">
           <Textarea
             className="h-[400px] w-full p-4 bg-transparent border-0 focus-visible:ring-0 text-sm font-mono leading-relaxed text-foreground placeholder:text-muted-foreground/50 resize-none outline-none"

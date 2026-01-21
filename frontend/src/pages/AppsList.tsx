@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Search, Settings } from 'lucide-react';
-import { 
-  getApps, 
-  deleteApp, 
-  getVendorsAndModels, 
+import {
+  getApps,
+  deleteApp,
+  getVendorsAndModels,
   getVendorKeyStatuses,
   magicGenerate,
   type App,
@@ -54,6 +54,22 @@ export default function AppsList() {
     queryKey: ['vendor-key-statuses'],
     queryFn: getVendorKeyStatuses,
   });
+
+  const filteredVendors = vendorsData?.vendors?.filter((vendor) =>
+    vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
+  ) ?? [];
+  
+  const filteredModelsByVendor = useMemo(() => {
+    if (!vendorKeyStatuses || !vendorsData?.modelsByVendor) return {};
+    const result: Record<string, Array<{ id: string; displayName: string }>> = {};
+    Object.entries(vendorsData.modelsByVendor).forEach(([vendorId, models]) => {
+      const isConfigured = vendorKeyStatuses.some((v) => v.vendor === vendorId && v.configured);
+      if (isConfigured) {
+        result[vendorId] = models;
+      }
+    });
+    return result;
+  }, [vendorKeyStatuses, vendorsData]);
 
   const generateMutation = useMutation({
     mutationFn: (data: { description: string; vendor: string; model: string }) => 
@@ -165,8 +181,8 @@ export default function AppsList() {
         <section className="flex flex-col items-center justify-center space-y-8 pt-8 pb-4">
 
           <AIHero 
-            vendors={vendorsData?.vendors ?? []}
-            modelsByVendor={vendorsData?.modelsByVendor ?? {}}
+            vendors={filteredVendors}
+            modelsByVendor={filteredModelsByVendor}
             vendorKeyStatuses={vendorKeyStatuses}
             onGenerate={(data) => generateMutation.mutate(data)}
             onManual={() => {
@@ -207,6 +223,10 @@ export default function AppsList() {
             onCopyApiKey={handleCopyApiKey}
             onCopyCurl={handleCopyCurl}
             onDeleteApp={handleDelete}
+            onManageTools={(e, appId) => {
+              e.stopPropagation();
+              navigate(`/apps/${appId}?tools=true`);
+            }}
           />
         </div>
       </div>

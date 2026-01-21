@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { appService } from './app.service'
 import { executionService } from '../execution/execution.service'
+import { toolConfigService } from '../tool-config/tool-config.service'
 import { DEFAULTS, LIMITS } from '../../shared/constants'
 import { handleControllerError } from '../../utils/http'
 
@@ -106,6 +107,12 @@ export const appController = new Elysia({ prefix: '/api/v1/apps' })
       name: t.Optional(t.String({ minLength: LIMITS.NAME_MIN_LENGTH })),
       description: t.Optional(t.String()),
       sampleData: t.Optional(t.String()),
+      toolUsage: t.Optional(t.Object({
+        snowflake: t.Optional(t.Object({
+          enabled: t.Boolean(),
+          query: t.String(),
+        })),
+      })),
     }),
     detail: { tags: ['Apps'], summary: 'Update app' },
   })
@@ -206,4 +213,31 @@ export const appController = new Elysia({ prefix: '/api/v1/apps' })
       versionId: t.Optional(t.String()),
     }),
     detail: { tags: ['Apps'], summary: 'Test prompt' },
+  })
+
+  .post('/:id/test-tool', async ({ params, body, set }) => {
+    try {
+      const app = await appService.getById(params.id)
+      if (!app) {
+        set.status = 404
+        return { error: 'App not found' }
+      }
+
+      const query = body.query || app.toolUsage?.snowflake?.query
+      if (!query) {
+        set.status = 400
+        return { error: 'No query provided and app has no configured query' }
+      }
+
+      const result = await toolConfigService.testQuery('snowflake', query)
+      return result
+    } catch (error) {
+      return handleControllerError(error, set, 'Failed to test tool query')
+    }
+  }, {
+    params: t.Object({ id: t.String() }),
+    body: t.Object({
+      query: t.Optional(t.String()),
+    }),
+    detail: { tags: ['Apps'], summary: 'Test tool query for app' },
   })

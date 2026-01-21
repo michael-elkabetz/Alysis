@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppsList from "./pages/AppsList";
 import AppDetail from "./pages/AppDetail";
+import { ToolCatalog } from "./pages/ToolCatalog";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 
@@ -24,6 +25,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<AppsList />} />
             <Route path="/apps/:id" element={<AppDetail />} />
+            <Route path="/tools" element={<ToolCatalog />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { apiKeyService } from './apikey.service'
+import { apiKeyService } from './api-key.service'
 
 export const apiKeyController = new Elysia({ prefix: '/api/v1' })
   .get('/apps/:id/api-keys', async ({ params }) => {

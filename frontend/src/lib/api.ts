@@ -34,6 +34,63 @@ export type ExecutionStatus = 'success' | 'error';
 export type ResponseFormat = 'json' | 'text';
 export type Vendor = 'openai' | 'anthropic' | 'gemini';
 export type Provider = Vendor;
+export type ToolType = 'snowflake' | 'postgres';
+
+export interface AppToolUsage {
+  snowflake?: {
+    enabled: boolean;
+    query: string;
+  };
+  postgres?: {
+    enabled: boolean;
+    query: string;
+  };
+}
+
+export interface SnowflakeConfig {
+  account: string;
+  user: string;
+  warehouse: string;
+  database: string;
+  schema?: string;
+  role: string;
+  privateKey?: string;
+  privateKeyPassword?: string;
+  password?: string;
+}
+
+export interface PostgresConfig {
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password?: string;
+}
+
+export interface SnowflakeMaskedConfig {
+  account?: string;
+  user?: string;
+  warehouse?: string;
+  database?: string;
+  schema?: string;
+  role?: string;
+}
+
+export interface PostgresMaskedConfig {
+  host?: string;
+  port?: number;
+  database?: string;
+  user?: string;
+}
+
+export type ToolConfigMaskedConfig = SnowflakeMaskedConfig | PostgresMaskedConfig;
+
+export interface ToolConfigStatus {
+  toolType: ToolType;
+  configured: boolean;
+  maskedConfig: ToolConfigMaskedConfig | null;
+  updatedAt: string | null;
+}
 
 export interface App {
   id: string;
@@ -42,6 +99,7 @@ export interface App {
   status: AppStatus;
   activeVersionId: string | null;
   sampleData: string | null;
+  toolUsage: AppToolUsage | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -185,6 +243,7 @@ export interface UpdateAppDto {
   name?: string;
   description?: string;
   sampleData?: string;
+  toolUsage?: AppToolUsage;
 }
 
 export interface MagicGenerateResult {
@@ -494,7 +553,351 @@ export async function deleteVendorKey(vendor: Vendor): Promise<void> {
   });
 }
 
-// Backwards compatibility aliases
+export async function getToolConfigStatuses(): Promise<ToolConfigStatus[]> {
+  return fetchApi<ToolConfigStatus[]>('/api/v1/tool-configs');
+}
+
+export async function getToolConfigStatus(toolType: ToolType): Promise<ToolConfigStatus> {
+  return fetchApi<ToolConfigStatus>(`/api/v1/tool-configs/${toolType}`);
+}
+
+export async function setToolConfig(
+  toolType: ToolType,
+  config: SnowflakeConfig | PostgresConfig
+): Promise<ToolConfigStatus> {
+  return fetchApi<ToolConfigStatus>(`/api/v1/tool-configs/${toolType}`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  });
+}
+
+export async function deleteToolConfig(toolType: ToolType): Promise<void> {
+  await fetchApi<{ success: boolean }>(`/api/v1/tool-configs/${toolType}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function testToolConnection(
+  toolType: ToolType
+): Promise<{ success: boolean; error?: string }> {
+  return fetchApi<{ success: boolean; error?: string }>(`/api/v1/tool-configs/${toolType}/test`, {
+    method: 'POST',
+  });
+}
+
+export async function testToolQuery(
+  toolType: ToolType,
+  query: string
+): Promise<{ success: boolean; rowCount?: number; error?: string; data?: unknown }> {
+  return fetchApi<{ success: boolean; rowCount?: number; error?: string }>(
+    `/api/v1/tool-configs/${toolType}/test-query`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }
+  );
+}
+
+export async function testAppToolQuery(
+  appId: string,
+  query?: string
+): Promise<{ success: boolean; rowCount?: number; error?: string; data?: unknown }> {
+  return fetchApi<{ success: boolean; rowCount?: number; error?: string }>(
+    `/api/v1/apps/${appId}/test-tool`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }
+  );
+}
+
+export type ToolCategory = 'database' | 'http' | 'storage' | 'custom';
+export type ExecutorType = 'sql' | 'http' | 'storage' | 'custom';
+
+export interface JsonSchemaProperty {
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  description?: string;
+  format?: 'password' | 'uri' | 'email' | 'textarea';
+  default?: unknown;
+  enum?: string[];
+  minimum?: number;
+  maximum?: number;
+}
+
+export interface JsonSchema {
+  type: 'object';
+  properties: Record<string, JsonSchemaProperty>;
+  required?: string[];
+}
+
+export interface ToolDefinition {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  category: ToolCategory;
+  executorType: ExecutorType;
+  configSchema: JsonSchema;
+  usageSchema: JsonSchema;
+  builtIn: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ToolInstance {
+  id: string;
+  name: string;
+  toolDefinitionId: string;
+  config: Record<string, unknown>;
+  maskedConfig: Record<string, unknown>;
+  definition: {
+    id: string;
+    name: string;
+    displayName: string;
+    category: string;
+    executorType: string;
+    configSchema: JsonSchema;
+    usageSchema: JsonSchema;
+    builtIn: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ToolInstanceStatus {
+  id: string;
+  name: string;
+  toolDefinitionId: string;
+  definitionName: string;
+  displayName: string;
+  category: string;
+  executorType: string;
+  configured: boolean;
+  maskedConfig: Record<string, unknown>;
+  updatedAt: string;
+}
+
+export interface AppToolUsageV2 {
+  id: string;
+  appId: string;
+  toolInstanceId: string;
+  enabled: boolean;
+  usageConfig: Record<string, unknown>;
+  instance: {
+    id: string;
+    name: string;
+  };
+  definition: {
+    id: string;
+    name: string;
+    displayName: string;
+    category: string;
+    executorType: string;
+    usageSchema: JsonSchema;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getToolDefinitions(): Promise<ToolDefinition[]> {
+  return fetchApi<ToolDefinition[]>('/api/v1/tool-definitions');
+}
+
+export async function getToolDefinition(id: string): Promise<ToolDefinition> {
+  return fetchApi<ToolDefinition>(`/api/v1/tool-definitions/${id}`);
+}
+
+export async function getToolDefinitionsByCategory(category: ToolCategory): Promise<ToolDefinition[]> {
+  return fetchApi<ToolDefinition[]>(`/api/v1/tool-definitions/category/${category}`);
+}
+
+export async function getToolCategories(): Promise<{ category: ToolCategory; count: number }[]> {
+  return fetchApi<{ category: ToolCategory; count: number }[]>('/api/v1/tool-definitions/categories');
+}
+
+export interface CreateToolDefinitionDto {
+  name: string;
+  displayName: string;
+  description?: string;
+  category: ToolCategory;
+  executorType: ExecutorType;
+  configSchema: JsonSchema;
+  usageSchema: JsonSchema;
+}
+
+export async function createToolDefinition(dto: CreateToolDefinitionDto): Promise<ToolDefinition> {
+  return fetchApi<ToolDefinition>('/api/v1/tool-definitions', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateToolDefinition(
+  id: string,
+  dto: Partial<Omit<CreateToolDefinitionDto, 'name' | 'category' | 'executorType'>>
+): Promise<ToolDefinition> {
+  return fetchApi<ToolDefinition>(`/api/v1/tool-definitions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteToolDefinition(id: string): Promise<void> {
+  await fetchApi<{ success: boolean }>(`/api/v1/tool-definitions/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getToolInstances(): Promise<ToolInstance[]> {
+  return fetchApi<ToolInstance[]>('/api/v1/tool-instances');
+}
+
+export async function getToolInstanceStatuses(): Promise<ToolInstanceStatus[]> {
+  return fetchApi<ToolInstanceStatus[]>('/api/v1/tool-instances/statuses');
+}
+
+export async function getToolInstance(id: string): Promise<ToolInstance> {
+  return fetchApi<ToolInstance>(`/api/v1/tool-instances/${id}`);
+}
+
+export async function getToolInstancesByDefinition(definitionId: string): Promise<ToolInstance[]> {
+  return fetchApi<ToolInstance[]>(`/api/v1/tool-instances/by-definition/${definitionId}`);
+}
+
+export interface CreateToolInstanceDto {
+  toolDefinitionId: string;
+  name: string;
+  config: Record<string, unknown>;
+}
+
+export async function createToolInstance(dto: CreateToolInstanceDto): Promise<ToolInstance> {
+  return fetchApi<ToolInstance>('/api/v1/tool-instances', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateToolInstance(
+  id: string,
+  dto: Partial<Omit<CreateToolInstanceDto, 'toolDefinitionId'>>
+): Promise<ToolInstance> {
+  return fetchApi<ToolInstance>(`/api/v1/tool-instances/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteToolInstance(id: string): Promise<void> {
+  await fetchApi<{ success: boolean }>(`/api/v1/tool-instances/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function testToolInstanceConnection(id: string): Promise<{ success: boolean; error?: string }> {
+  return fetchApi<{ success: boolean; error?: string }>(`/api/v1/tool-instances/${id}/test`, {
+    method: 'POST',
+  });
+}
+
+export async function testToolInstanceQuery(
+  id: string,
+  usageConfig: Record<string, unknown>
+): Promise<{ success: boolean; rowCount?: number; error?: string; data?: unknown }> {
+  return fetchApi<{ success: boolean; rowCount?: number; error?: string; data?: unknown }>(
+    `/api/v1/tool-instances/${id}/test-query`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ usageConfig }),
+    }
+  );
+}
+
+export async function getAppToolUsages(appId: string): Promise<AppToolUsageV2[]> {
+  return fetchApi<AppToolUsageV2[]>(`/api/v1/apps/${appId}/tools`);
+}
+
+export async function getAppToolUsage(appId: string, usageId: string): Promise<AppToolUsageV2> {
+  return fetchApi<AppToolUsageV2>(`/api/v1/apps/${appId}/tools/${usageId}`);
+}
+
+export interface CreateAppToolUsageDto {
+  toolInstanceId: string;
+  enabled?: boolean;
+  usageConfig: Record<string, unknown>;
+}
+
+export async function createAppToolUsage(appId: string, dto: CreateAppToolUsageDto): Promise<AppToolUsageV2> {
+  return fetchApi<AppToolUsageV2>(`/api/v1/apps/${appId}/tools`, {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateAppToolUsage(
+  appId: string,
+  usageId: string,
+  dto: Partial<Omit<CreateAppToolUsageDto, 'toolInstanceId'>>
+): Promise<AppToolUsageV2> {
+  return fetchApi<AppToolUsageV2>(`/api/v1/apps/${appId}/tools/${usageId}`, {
+    method: 'PUT',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function upsertAppToolUsage(
+  appId: string,
+  instanceId: string,
+  dto: Partial<Omit<CreateAppToolUsageDto, 'toolInstanceId'>>
+): Promise<AppToolUsageV2> {
+  return fetchApi<AppToolUsageV2>(`/api/v1/apps/${appId}/tools/instance/${instanceId}`, {
+    method: 'PUT',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteAppToolUsage(appId: string, usageId: string): Promise<void> {
+  await fetchApi<{ success: boolean }>(`/api/v1/apps/${appId}/tools/${usageId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function toggleAppToolUsage(
+  appId: string,
+  usageId: string,
+  enabled: boolean
+): Promise<AppToolUsageV2> {
+  return fetchApi<AppToolUsageV2>(`/api/v1/apps/${appId}/tools/${usageId}/toggle`, {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function testAppToolUsageQuery(
+  appId: string,
+  usageId: string
+): Promise<{ success: boolean; rowCount?: number; error?: string; data?: unknown }> {
+  return fetchApi<{ success: boolean; rowCount?: number; error?: string }>(
+    `/api/v1/apps/${appId}/tools/${usageId}/test`,
+    {
+      method: 'POST',
+    }
+  );
+}
+
+export async function executeAppToolUsage(
+  appId: string,
+  usageId: string,
+  usageConfig?: Record<string, unknown>
+): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  return fetchApi<{ success: boolean; data?: unknown; error?: string }>(
+    `/api/v1/apps/${appId}/tools/${usageId}/execute`,
+    {
+      method: 'POST',
+      body: usageConfig ? JSON.stringify({ usageConfig }) : undefined,
+    }
+  );
+}
+
 export type Analysis = App;
 export type AnalysisStatus = AppStatus;
 export type AnalysisWithApiKey = AppWithApiKey;
@@ -504,9 +907,7 @@ export type CreateAnalysisDto = CreateAppDto;
 export type UpdateAnalysisDto = UpdateAppDto;
 export type ExecuteAnalysisResult = ExecuteAppResult;
 export type TestAnalysisPromptDto = TestAppPromptDto;
-export type TestAnalysisPromptResult = TestAppPromptResult;
-
-export const createAnalysis = createApp;
+export type TestAnalysisPromptResult = TestAppPromptResult;export const createAnalysis = createApp;
 export const getAnalyses = getApps;
 export const getAnalysis = getApp;
 export const updateAnalysis = updateApp;

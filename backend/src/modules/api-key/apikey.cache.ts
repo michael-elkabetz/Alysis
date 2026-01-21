@@ -1,4 +1,4 @@
-import type { ApiKeyRecord } from './apikey.repository'
+import type { ApiKeyRecord } from './api-key.repository'
 
 const hashCache = new Map<string, ApiKeyRecord>()
 const appIndex = new Map<string, Set<string>>()

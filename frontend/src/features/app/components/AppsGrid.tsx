@@ -1,11 +1,11 @@
 import { Plus, Layers, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AppCard } from './AppCard';
-import type { Analysis } from '@/lib/api';
+import type { App } from '@/lib/api';
 
 interface AppsGridProps {
-  apps: Analysis[];
-  filteredApps: Analysis[];
+  apps: App[];
+  filteredApps: App[];
   isLoading: boolean;
   searchQuery: string;
   onClearSearch: () => void;
@@ -14,6 +14,7 @@ interface AppsGridProps {
   onCopyApiKey: (e: React.MouseEvent, appId: string) => void;
   onCopyCurl: (e: React.MouseEvent, appId: string) => void;
   onDeleteApp: (e: React.MouseEvent, appId: string) => void;
+  onManageTools?: (e: React.MouseEvent, appId: string) => void;
 }
 
 export function AppsGrid({
@@ -27,6 +28,7 @@ export function AppsGrid({
   onCopyApiKey,
   onCopyCurl,
   onDeleteApp,
+  onManageTools,
 }: AppsGridProps) {
   if (isLoading) {
     return (
@@ -82,6 +84,7 @@ export function AppsGrid({
           onCopyApiKey={(e) => onCopyApiKey(e, app.id)}
           onCopyCurl={(e) => onCopyCurl(e, app.id)}
           onDelete={(e) => onDeleteApp(e, app.id)}
+          onManageTools={onManageTools ? (e) => onManageTools(e, app.id) : undefined}
         />
       ))}
 

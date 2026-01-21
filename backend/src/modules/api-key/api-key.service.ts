@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { apiKeyRepository } from './apikey.repository'
+import { apiKeyRepository } from './api-key.repository'
 import { apiKeyCache } from './apikey.cache'
 
 function generateApiKey(): string {

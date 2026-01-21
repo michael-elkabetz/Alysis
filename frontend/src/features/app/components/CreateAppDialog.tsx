@@ -15,6 +15,7 @@ import {
   getVendorKeyStatuses,
   createApp,
   type CreateAppDto,
+  type ModelOption,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,11 +100,28 @@ export function CreateAppDialog({
     queryFn: getVendorKeyStatuses,
   });
 
-  const vendors = vendorsData?.vendors ?? [];
-  const modelsByVendor = vendorsData?.modelsByVendor ?? {};
+  const configuredVendors = useMemo(() => {
+    if (!vendorKeyStatuses || !vendorsData?.vendors) return [];
+    return vendorsData.vendors.filter((vendor) =>
+      vendorKeyStatuses.some((v) => v.vendor === vendor.id && v.configured)
+    );
+  }, [vendorKeyStatuses, vendorsData]);
+
+  const modelsByVendor = useMemo(() => {
+    if (!vendorKeyStatuses || !vendorsData?.modelsByVendor) return {};
+    const result: Record<string, ModelOption[]> = {};
+    Object.entries(vendorsData.modelsByVendor).forEach(([vendorId, models]) => {
+      const isConfigured = vendorKeyStatuses.some((v) => v.vendor === vendorId && v.configured);
+      if (isConfigured) {
+        result[vendorId] = models;
+      }
+    });
+    return result;
+  }, [vendorKeyStatuses, vendorsData]);
+
+  const vendors = configuredVendors;
 
   const configuredVendor = useMemo(() => {
-
     if (!vendorKeyStatuses || !vendors.length) return null;
     const configured = vendorKeyStatuses.find((v) => v.configured);
     if (!configured) return null;
@@ -143,7 +161,7 @@ export function CreateAppDialog({
         model: defaultModel,
       };
     });
-  }, [configuredVendor, modelsByVendor, vendors, initialValues]);
+  }, [configuredVendor, modelsByVendor, vendors, initialValues, setSampleData]);
 
   useEffect(() => {
     const vendorModels = modelsByVendor[formData.vendor];
@@ -279,15 +297,15 @@ export function CreateAppDialog({
   if (savedApp) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-lg bg-card border-border">
-          <DialogHeader className="text-center pb-2">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col bg-card border-border">
+          <DialogHeader className="text-center pb-2 flex-shrink-0">
             <div className="mx-auto w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-4 border border-emerald-500/20">
               <CheckCircle2 className="w-7 h-7 text-emerald-400" />
             </div>
             <DialogTitle className="text-xl text-center">App Created Successfully</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
             <div className="overflow-hidden">
               <Label className="text-xs text-muted-foreground uppercase tracking-wider">App Name</Label>
               <p className="mt-1.5 text-lg font-semibold text-foreground break-words">
@@ -329,14 +347,14 @@ export function CreateAppDialog({
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
-              <pre className="px-3 py-2.5 bg-[#f5f0e8] rounded-xl text-xs font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap break-all">
+              <pre className="px-3 py-2.5 bg-[#f5f0e8] rounded-xl text-xs font-mono text-muted-foreground overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all max-h-[40vh]">
 {generateCurl()}
               </pre>
             </div>
 
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-2 flex-shrink-0">
             <Button onClick={handleClose} className="flex-1 btn-primary">
               Done
             </Button>
@@ -444,9 +462,7 @@ export function CreateAppDialog({
                         <SelectValue placeholder={hasConfiguredVendor ? "Select provider" : "No vendor configured"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {vendors.filter((vendor) => 
-                          vendorKeyStatuses?.some((v) => v.vendor === vendor.id && v.configured)
-                        ).map((vendor) => (
+                        {vendors.map((vendor) => (
                           <SelectItem key={vendor.id} value={vendor.id} className="focus:bg-secondary">
                             {vendor.displayName}
                           </SelectItem>
@@ -500,7 +516,7 @@ export function CreateAppDialog({
 
           {step === 'test' && (
             <div className="h-full flex flex-col">
-              <Label htmlFor="sampleData" className="text-sm mb-2">Sample Data</Label>
+              <Label htmlFor="sampleData" className="text-sm mb-2">Input</Label>
               <Textarea
                 id="sampleData"
                 className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0e8] !border-0"

@@ -49,7 +49,7 @@ export const promptRepository = {
       .orderBy(desc(schema.promptVersions.version))
     return results.map((r) => ({
       ...r,
-      interfaces: r.interfaces as PromptInterfaces | null,
+      interfaces: r.interfaces as AnalysisInterfaces | null,
       vendor: r.provider as Vendor,
     }))
   },
