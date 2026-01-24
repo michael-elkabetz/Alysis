@@ -271,4 +271,14 @@ export const scheduleService = {
   async findAll(): Promise<AppScheduleRow[]> {
     return scheduleRepository.findAllSchedules()
   },
+
+  async getAppNameForSchedule(scheduleId: string): Promise<{ name: string } | null> {
+    const schedule = await scheduleRepository.findScheduleById(scheduleId)
+    if (!schedule) return null
+    
+    const app = await appRepository.findById(schedule.appId)
+    if (!app) return null
+    
+    return { name: app.name }
+  },
 }

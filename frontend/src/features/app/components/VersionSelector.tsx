@@ -1,4 +1,4 @@
-import { History, Trash2, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,7 +7,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRelativeTime } from '@/hooks/useRelativeTime';
 import type { PromptVersion } from '@/lib/api';
 
 interface VersionSelectorProps {
@@ -25,7 +24,6 @@ export function VersionSelector({
   onSelectVersion,
   onDeleteVersion,
 }: VersionSelectorProps) {
-  const { formatRelativeTime } = useRelativeTime();
   const selectedVersion = versions.find((v) => v.id === selectedVersionId);
 
   if (versions.length === 0) return null;

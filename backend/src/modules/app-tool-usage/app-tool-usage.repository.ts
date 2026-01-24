@@ -15,6 +15,7 @@ export interface AppToolUsageWithInstance extends AppToolUsageRow {
     displayName: string
     category: string
     executorType: string
+    direction: string
     usageSchema: JsonSchema
   }
 }
@@ -36,6 +37,7 @@ export const appToolUsageRepository = {
           displayName: toolDefinitions.displayName,
           category: toolDefinitions.category,
           executorType: toolDefinitions.executorType,
+          direction: toolDefinitions.direction,
           usageSchema: toolDefinitions.usageSchema,
         },
       })
@@ -50,6 +52,7 @@ export const appToolUsageRepository = {
       instance: r.instance as AppToolUsageWithInstance['instance'],
       definition: {
         ...r.definition,
+        direction: r.definition.direction || 'input',
         usageSchema: r.definition.usageSchema as JsonSchema,
       },
     }))
@@ -71,6 +74,7 @@ export const appToolUsageRepository = {
           displayName: toolDefinitions.displayName,
           category: toolDefinitions.category,
           executorType: toolDefinitions.executorType,
+          direction: toolDefinitions.direction,
           usageSchema: toolDefinitions.usageSchema,
         },
       })
@@ -86,6 +90,7 @@ export const appToolUsageRepository = {
       instance: results[0].instance as AppToolUsageWithInstance['instance'],
       definition: {
         ...results[0].definition,
+        direction: results[0].definition.direction || 'input',
         usageSchema: results[0].definition.usageSchema as JsonSchema,
       },
     }
@@ -107,6 +112,7 @@ export const appToolUsageRepository = {
           displayName: toolDefinitions.displayName,
           category: toolDefinitions.category,
           executorType: toolDefinitions.executorType,
+          direction: toolDefinitions.direction,
           usageSchema: toolDefinitions.usageSchema,
         },
       })
@@ -122,6 +128,7 @@ export const appToolUsageRepository = {
       instance: results[0].instance as AppToolUsageWithInstance['instance'],
       definition: {
         ...results[0].definition,
+        direction: results[0].definition.direction || 'input',
         usageSchema: results[0].definition.usageSchema as JsonSchema,
       },
     }

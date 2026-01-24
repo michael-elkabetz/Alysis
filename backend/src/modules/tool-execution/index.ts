@@ -1,9 +1,10 @@
 export { executorRegistry } from './executor.registry'
-export { sqlExecutor } from './sql.executor'
-export { httpExecutor } from './http.executor'
+export { sqlExecutor } from './input/sql.executor'
+export { httpExecutor } from './input/http.executor'
+export { slackExecutor } from './output/slack.executor'
 
-export { snowflakeTool } from './snowflake.tool'
-export { postgresTool } from './postgres.tool'
+export { snowflakeTool } from './input/snowflake.tool'
+export { postgresTool } from './input/postgres.tool'
 
 export type {
   ToolExecutor,
@@ -12,3 +13,5 @@ export type {
   ExecuteResult,
   TestQueryResult,
 } from './executor.interface'
+
+export type { SlackConfig, SlackExecutionContext } from './output/slack.executor'

@@ -14,6 +14,7 @@ import {
   Zap,
   Play,
   Code2,
+  Bell,
 } from 'lucide-react';
 import {
   getToolDefinitions,
@@ -65,6 +66,7 @@ const CATEGORY_CONFIG: Record<ToolCategory, { label: string; icon: typeof Databa
   database: { label: 'Databases', icon: Database, color: 'text-blue-500' },
   http: { label: 'HTTP / APIs', icon: Globe, color: 'text-green-500' },
   storage: { label: 'Storage', icon: HardDrive, color: 'text-purple-500' },
+  notification: { label: 'Notifications', icon: Bell, color: 'text-pink-500' },
   custom: { label: 'Custom', icon: Puzzle, color: 'text-orange-500' },
 };
 

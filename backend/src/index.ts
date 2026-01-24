@@ -5,7 +5,7 @@ import { staticPlugin } from '@elysiajs/static'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import postgres from 'postgres'
-import { db } from './db'
+import './db'
 
 import { healthController } from './modules/health/health.controller'
 import { appController } from './modules/app/app.controller'
@@ -44,10 +44,63 @@ if (process.env.DATABASE_URL) {
       
       await client.unsafe(initSql)
     }
+
+    // Ensure tool_direction enum and direction column exist
+    const directionEnumExists = await client`
+      SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tool_direction')
+    `
+    if (!directionEnumExists[0]?.exists) {
+      await client`
+        DO $$ BEGIN
+          CREATE TYPE tool_direction AS ENUM ('input', 'output');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$
+      `
+    }
+
+    // Add notification to tool_category enum if not exists
+    const categoryNotificationExists = await client`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumtypid = 'tool_category'::regtype 
+        AND enumlabel = 'notification'
+      )
+    `
+    if (!categoryNotificationExists[0]?.exists) {
+      await client`ALTER TYPE tool_category ADD VALUE 'notification'`
+    }
+
+    // Add notification to executor_type enum if not exists
+    const executorNotificationExists = await client`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumtypid = 'executor_type'::regtype 
+        AND enumlabel = 'notification'
+      )
+    `
+    if (!executorNotificationExists[0]?.exists) {
+      await client`ALTER TYPE executor_type ADD VALUE 'notification'`
+    }
+
+    // Add direction column to tool_definitions if not exists
+    const directionColumnExists = await client`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'tool_definitions' 
+        AND column_name = 'direction'
+      )
+    `
+    if (!directionColumnExists[0]?.exists) {
+      await client`
+        ALTER TABLE tool_definitions 
+        ADD COLUMN direction tool_direction NOT NULL DEFAULT 'input'
+      `
+    }
     
     await client.end()
-  } catch (error) {
-    console.error('Failed to initialize database:', error)
+  } catch {
+    // Database initialization failed - server will continue but DB operations may fail
   }
 }
 

@@ -32,6 +32,7 @@ export interface AppToolUsageResponse {
     displayName: string
     category: string
     executorType: string
+    direction: string
     usageSchema: JsonSchema
   }
   createdAt: Date
@@ -55,6 +56,7 @@ function toResponse(usage: AppToolUsageWithInstance): AppToolUsageResponse {
       displayName: usage.definition.displayName,
       category: usage.definition.category,
       executorType: usage.definition.executorType,
+      direction: usage.definition.direction || 'input',
       usageSchema: usage.definition.usageSchema,
     },
     createdAt: usage.createdAt,
@@ -222,7 +224,7 @@ export const appToolUsageService = {
 
   async executeAllForApp(appId: string): Promise<Map<string, { success: boolean; data?: unknown; error?: string }>> {
     const usages = await appToolUsageRepository.findByAppId(appId)
-    const enabledUsages = usages.filter(u => u.enabled)
+    const enabledUsages = usages.filter(u => u.enabled && u.definition.direction !== 'output')
     const results = new Map<string, { success: boolean; data?: unknown; error?: string }>()
 
     for (const usage of enabledUsages) {
@@ -232,5 +234,27 @@ export const appToolUsageService = {
     }
 
     return results
+  },
+
+  async getOutputToolsForApp(appId: string): Promise<AppToolUsageResponse[]> {
+    const usages = await appToolUsageRepository.findByAppId(appId)
+    const outputUsages = usages.filter(u => u.enabled && u.definition.direction === 'output')
+    return outputUsages.map(toResponse)
+  },
+
+  async getOutputToolsWithConfigForApp(appId: string): Promise<Array<{
+    id: string
+    executorType: string
+    instanceConfig: Record<string, unknown>
+    usageConfig: Record<string, unknown>
+  }>> {
+    const usages = await appToolUsageRepository.findByAppId(appId)
+    const outputUsages = usages.filter(u => u.enabled && u.definition.direction === 'output')
+    return outputUsages.map(u => ({
+      id: u.id,
+      executorType: u.definition.executorType,
+      instanceConfig: u.instance.config,
+      usageConfig: u.usageConfig,
+    }))
   },
 }

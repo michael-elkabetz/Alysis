@@ -1,11 +1,13 @@
 import type { ToolExecutor, ExecutorRegistry, TestConnectionResult, ExecuteResult, TestQueryResult } from './executor.interface'
-import { sqlExecutor } from './sql.executor'
-import { httpExecutor } from './http.executor'
+import { sqlExecutor } from './input/sql.executor'
+import { httpExecutor } from './input/http.executor'
+import { slackExecutor } from './output/slack.executor'
 import type { ExecutorType } from '../../db/schema'
 
 const executors: ExecutorRegistry = {
   sql: sqlExecutor,
   http: httpExecutor,
+  notification: slackExecutor,
 }
 
 export const executorRegistry = {

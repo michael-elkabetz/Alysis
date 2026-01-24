@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid'
 import { toolConfigRepository } from './tool-config.repository'
-import { snowflakeTool } from '../tool-execution/snowflake.tool'
-import { postgresTool } from '../tool-execution/postgres.tool'
-import type { ToolType, SnowflakeConfig, PostgresConfig, ToolConfigStatus, SnowflakeMaskedConfig, PostgresMaskedConfig, ToolConfigMaskedConfig } from '../../shared/types'
+import { snowflakeTool } from '../tool-execution/input/snowflake.tool'
+import { postgresTool } from '../tool-execution/input/postgres.tool'
+import type { ToolType, SnowflakeConfig, PostgresConfig, ToolConfigStatus, SnowflakeMaskedConfig, PostgresMaskedConfig } from '../../shared/types'
 
 function maskSnowflakeConfig(config: SnowflakeConfig): SnowflakeMaskedConfig {
   return {

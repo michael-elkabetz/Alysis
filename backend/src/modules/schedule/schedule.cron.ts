@@ -1,6 +1,8 @@
 import { CronJob } from 'cron'
 import { scheduleService } from './schedule.service'
 import { executionService } from '../execution/execution.service'
+import { appToolUsageService } from '../app-tool-usage/app-tool-usage.service'
+import { slackExecutor, type SlackConfig } from '../tool-execution/output/slack.executor'
 import type { ScheduledRunRow } from '../../db/schema'
 
 const MAX_CONCURRENT_JOBS = parseInt(
@@ -35,6 +37,37 @@ function timeout(ms: number): Promise<never> {
   })
 }
 
+async function executeOutputTools(
+  appId: string,
+  appName: string,
+  result: { id: string; output?: unknown; latencyMs?: number },
+  status: 'success' | 'error',
+  errorMessage?: string
+): Promise<void> {
+  try {
+    const outputTools = await appToolUsageService.getOutputToolsWithConfigForApp(appId)
+    
+    for (const tool of outputTools) {
+      if (tool.executorType === 'notification') {
+        const config = tool.instanceConfig as SlackConfig
+        
+        await slackExecutor.sendExecutionResult(
+          config,
+          tool.usageConfig,
+          {
+            appName,
+            output: result.output,
+            status,
+            latencyMs: result.latencyMs || 0,
+            errorMessage,
+          }
+        )
+      }
+    }
+  } catch (err) {
+  }
+}
+
 async function processRun(run: ScheduledRunRow): Promise<void> {
   activeJobs++
 
@@ -53,6 +86,11 @@ async function processRun(run: ScheduledRunRow): Promise<void> {
     ])
 
     await scheduleService.markRunCompleted(run.id, result.id)
+
+    const appInfo = await scheduleService.getAppNameForSchedule(run.scheduleId)
+    if (appInfo) {
+      await executeOutputTools(appId, appInfo.name, result, 'success')
+    }
   } catch (error) {
     const errorMessage =
       (error as Error).message === 'Job timeout'
@@ -60,6 +98,17 @@ async function processRun(run: ScheduledRunRow): Promise<void> {
         : (error as Error).message
 
     await scheduleService.markRunFailed(run.id, errorMessage)
+
+    try {
+      const scheduleInfo = await scheduleService.getScheduleWithApp(run.scheduleId)
+      if (scheduleInfo) {
+        const appInfo = await scheduleService.getAppNameForSchedule(run.scheduleId)
+        if (appInfo) {
+          await executeOutputTools(scheduleInfo.appId, appInfo.name, { id: '', output: null, latencyMs: 0 }, 'error', errorMessage)
+        }
+      }
+    } catch (err) {
+    }
   } finally {
     activeJobs--
   }

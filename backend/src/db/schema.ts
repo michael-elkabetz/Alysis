@@ -6,8 +6,9 @@ export const responseFormatEnum = pgEnum('response_format', ['json', 'text']);
 export const providerEnum = pgEnum('provider', ['openai', 'anthropic', 'gemini']);
 export const toolTypeEnum = pgEnum('tool_type', ['snowflake', 'postgres']);
 
-export const toolCategoryEnum = pgEnum('tool_category', ['database', 'http', 'storage', 'custom']);
-export const executorTypeEnum = pgEnum('executor_type', ['sql', 'http', 'storage', 'custom']);
+export const toolCategoryEnum = pgEnum('tool_category', ['database', 'http', 'storage', 'notification', 'custom']);
+export const executorTypeEnum = pgEnum('executor_type', ['sql', 'http', 'storage', 'notification', 'custom']);
+export const toolDirectionEnum = pgEnum('tool_direction', ['input', 'output']);
 export const scheduledRunStatusEnum = pgEnum('scheduled_run_status', ['pending', 'running', 'completed', 'failed', 'skipped']);
 
 export interface JsonSchemaProperty {
@@ -26,8 +27,9 @@ export interface JsonSchema {
   required?: string[];
 }
 
-export type ToolCategory = 'database' | 'http' | 'storage' | 'custom';
-export type ExecutorType = 'sql' | 'http' | 'storage' | 'custom';
+export type ToolCategory = 'database' | 'http' | 'storage' | 'notification' | 'custom';
+export type ExecutorType = 'sql' | 'http' | 'storage' | 'notification' | 'custom';
+export type ToolDirection = 'input' | 'output';
 
 export interface AppToolUsage {
   snowflake?: {
@@ -79,6 +81,7 @@ export const toolDefinitions = pgTable('tool_definitions', {
   description: text('description'),
   category: toolCategoryEnum('category').notNull(),
   executorType: executorTypeEnum('executor_type').notNull(),
+  direction: toolDirectionEnum('direction').notNull().default('input'),
   configSchema: jsonb('config_schema').notNull().$type<JsonSchema>(),
   usageSchema: jsonb('usage_schema').notNull().$type<JsonSchema>(),
   builtIn: boolean('built_in').notNull().default(false),

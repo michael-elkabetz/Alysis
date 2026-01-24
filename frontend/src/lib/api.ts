@@ -615,8 +615,8 @@ export async function testAppToolQuery(
   );
 }
 
-export type ToolCategory = 'database' | 'http' | 'storage' | 'custom';
-export type ExecutorType = 'sql' | 'http' | 'storage' | 'custom';
+export type ToolCategory = 'database' | 'http' | 'storage' | 'notification' | 'custom';
+export type ExecutorType = 'sql' | 'http' | 'storage' | 'notification' | 'custom';
 
 export interface JsonSchemaProperty {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -676,6 +676,7 @@ export interface ToolInstanceStatus {
   displayName: string;
   category: string;
   executorType: string;
+  direction?: string;
   configured: boolean;
   maskedConfig: Record<string, unknown>;
   updatedAt: string;
@@ -697,6 +698,7 @@ export interface AppToolUsageV2 {
     displayName: string;
     category: string;
     executorType: string;
+    direction?: string;
     usageSchema: JsonSchema;
   };
   createdAt: string;

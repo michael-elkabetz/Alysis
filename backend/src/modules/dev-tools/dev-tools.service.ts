@@ -5,6 +5,7 @@ export const devToolsService = {
     analysisName: string,
     jsonOutput: Record<string, unknown>
   ): Promise<string> {
+    void analysisName
     const client = getClient('openai')
     
     const prompt = `

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { toolDefinitionRepository } from './tool-definition.repository'
-import type { ToolDefinitionRow, NewToolDefinition, ToolCategory, ExecutorType, JsonSchema } from '../../db/schema'
+import type { ToolDefinitionRow, NewToolDefinition, ToolCategory, ExecutorType, ToolDirection, JsonSchema } from '../../db/schema'
 
 const BUILT_IN_TOOLS: NewToolDefinition[] = [
   {
@@ -10,6 +10,7 @@ const BUILT_IN_TOOLS: NewToolDefinition[] = [
     description: 'Cloud data warehouse for analytics and data storage',
     category: 'database',
     executorType: 'sql',
+    direction: 'input',
     configSchema: {
       type: 'object',
       properties: {
@@ -41,6 +42,7 @@ const BUILT_IN_TOOLS: NewToolDefinition[] = [
     description: 'Open-source relational database system',
     category: 'database',
     executorType: 'sql',
+    direction: 'input',
     configSchema: {
       type: 'object',
       properties: {
@@ -69,6 +71,7 @@ const BUILT_IN_TOOLS: NewToolDefinition[] = [
     description: 'Make HTTP/REST API calls to external services',
     category: 'http',
     executorType: 'http',
+    direction: 'input',
     configSchema: {
       type: 'object',
       properties: {
@@ -88,6 +91,28 @@ const BUILT_IN_TOOLS: NewToolDefinition[] = [
     },
     builtIn: true,
   },
+  {
+    id: 'td-slack',
+    name: 'slack',
+    displayName: 'Slack',
+    description: 'Send scheduled analysis results to Slack via webhook',
+    category: 'notification',
+    executorType: 'notification',
+    direction: 'output',
+    configSchema: {
+      type: 'object',
+      properties: {
+        webhookUrl: { type: 'string', format: 'password', description: 'Slack Incoming Webhook URL (channel is configured in Slack)' },
+      },
+      required: ['webhookUrl'],
+    },
+    usageSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+    builtIn: true,
+  },
 ]
 
 export interface CreateToolDefinitionDto {
@@ -96,6 +121,7 @@ export interface CreateToolDefinitionDto {
   description?: string
   category: ToolCategory
   executorType: ExecutorType
+  direction?: ToolDirection
   configSchema: JsonSchema
   usageSchema: JsonSchema
 }
@@ -114,6 +140,7 @@ export interface ToolDefinitionResponse {
   description: string | null
   category: ToolCategory
   executorType: ExecutorType
+  direction: ToolDirection
   configSchema: JsonSchema
   usageSchema: JsonSchema
   builtIn: boolean
@@ -129,6 +156,7 @@ function toResponse(definition: ToolDefinitionRow): ToolDefinitionResponse {
     description: definition.description,
     category: definition.category as ToolCategory,
     executorType: definition.executorType as ExecutorType,
+    direction: (definition.direction as ToolDirection) || 'input',
     configSchema: definition.configSchema,
     usageSchema: definition.usageSchema,
     builtIn: definition.builtIn,
@@ -171,6 +199,7 @@ export const toolDefinitionService = {
       description: dto.description || null,
       category: dto.category,
       executorType: dto.executorType,
+      direction: dto.direction || 'input',
       configSchema: dto.configSchema,
       usageSchema: dto.usageSchema,
       builtIn: false,

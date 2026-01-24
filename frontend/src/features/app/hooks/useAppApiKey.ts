@@ -44,8 +44,8 @@ export function useAppApiKey({ appId }: UseAppApiKeyOptions): UseAppApiKeyReturn
         if (!cancelled && key) {
           setApiKey(key);
         }
-      } catch (error) {
-        console.error('Failed to load API key:', error);
+      } catch {
+        // Failed to load API key - will retry on next access
       } finally {
         if (!cancelled) {
           setIsLoadingKey(false);

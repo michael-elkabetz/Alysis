@@ -13,6 +13,7 @@ import {
   Puzzle,
   Globe,
   Database,
+  Bell,
   Trash2,
   Wrench,
   Pencil,
@@ -231,8 +232,8 @@ function ToolUsageCard({ appId, instance, usage, usageSchema }: ToolUsageCardPro
           
           setUsageConfig(populatedConfig);
         })
-        .catch((error) => {
-          console.error('Failed to fetch instance config:', error);
+        .catch(() => {
+          // Failed to fetch instance config - will use defaults
         });
     } else if (!isEditing) {
       setInstanceConfig(null);
@@ -301,6 +302,12 @@ function ToolUsageCard({ appId, instance, usage, usageSchema }: ToolUsageCardPro
     }
     setInstanceConfig(null);
     setIsEditing(false);
+  };
+
+  const handleRemoveTool = () => {
+    if (window.confirm("Remove this tool from this app?")) {
+      deleteUsageMutation.mutate();
+    }
   };
 
   const handleUsageConfigChange = (key: string, value: unknown) => {
@@ -376,6 +383,8 @@ function ToolUsageCard({ appId, instance, usage, usageSchema }: ToolUsageCardPro
       ? Database
       : instance.category === 'http'
       ? Globe
+      : instance.category === 'notification'
+      ? Bell
       : Puzzle;
 
   return (
@@ -427,11 +436,7 @@ function ToolUsageCard({ appId, instance, usage, usageSchema }: ToolUsageCardPro
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (window.confirm("Remove this tool from this app?")) {
-                    deleteUsageMutation.mutate();
-                  }
-                }}
+                onClick={handleRemoveTool}
                 disabled={deleteUsageMutation.isPending}
                 className="text-red-500 hover:text-red-600 hover:bg-red-500/20 h-8 w-8 p-0 border border-red-500/20 hover:border-red-500/40"
                 title="Remove tool from this app"
@@ -592,6 +597,15 @@ function UsageConfigForm({
             fontFamily: 'JetBrains Mono, monospace',
           }}
         />
+      </div>
+    );
+  }
+
+  if (executorType === 'notification') {
+    return (
+      <div className="text-xs text-muted-foreground">
+        <p>Notifications will be sent to the channel configured in the Slack webhook.</p>
+        <p className="mt-1">Scheduled analysis results will automatically be sent when jobs complete.</p>
       </div>
     );
   }
