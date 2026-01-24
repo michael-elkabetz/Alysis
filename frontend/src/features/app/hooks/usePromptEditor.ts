@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import {
   createPromptVersion,
   publishPromptVersion,
+  updateApp,
   type PromptVersion,
   type Vendor,
   type App,
@@ -20,6 +21,7 @@ interface UsePromptEditorOptions {
   app: App | undefined;
   versions: PromptVersion[];
   modelsByVendor: Record<string, { id: string; displayName: string }[]>;
+  sampleData?: string;
 }
 
 interface UsePromptEditorReturn {
@@ -50,6 +52,7 @@ export function usePromptEditor({
   app,
   versions,
   modelsByVendor,
+  sampleData,
 }: UsePromptEditorOptions): UsePromptEditorReturn {
   const queryClient = useQueryClient();
 
@@ -107,6 +110,12 @@ export function usePromptEditor({
     });
   }, []);
 
+  const hasSampleDataChanged = useCallback((): boolean => {
+    const currentSampleData = (sampleData || '').trim();
+    const originalSampleData = (app?.sampleData || '').trim();
+    return currentSampleData !== originalSampleData;
+  }, [sampleData, app?.sampleData]);
+
   const hasChanges = useCallback((): boolean => {
     if (!latestVersion) return true;
     
@@ -115,8 +124,10 @@ export function usePromptEditor({
     const latestPrompt = latestVersion.systemPrompt.trim();
     const latestModel = latestVersion.model;
     
-    return currentPrompt !== latestPrompt || currentModel !== latestModel;
-  }, [promptState.systemPrompt, promptState.model, latestVersion]);
+    const promptOrModelChanged = currentPrompt !== latestPrompt || currentModel !== latestModel;
+    
+    return promptOrModelChanged || hasSampleDataChanged();
+  }, [promptState.systemPrompt, promptState.model, latestVersion, hasSampleDataChanged]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -139,6 +150,11 @@ export function usePromptEditor({
           model: promptState.model,
         });
         await publishPromptVersion(appId, newVersion.id);
+        
+        if (hasSampleDataChanged() && sampleData) {
+          await updateApp(appId, { sampleData });
+        }
+        
         queryClient.invalidateQueries({ queryKey: ['app', appId] });
         queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
         toast.success('New version saved');
@@ -148,7 +164,7 @@ export function usePromptEditor({
     } finally {
       setIsSaving(false);
     }
-  }, [appId, isSelectedDifferentFromActive, selectedVersionId, promptState, queryClient, hasChanges]);
+  }, [appId, isSelectedDifferentFromActive, selectedVersionId, promptState, queryClient, hasChanges, hasSampleDataChanged, sampleData]);
 
   const updateVendor = useCallback((vendor: string) => {
     setPromptState(prev => ({ ...prev, vendor }));

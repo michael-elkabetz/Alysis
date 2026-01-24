@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Play, Activity, Loader2, Terminal, Trash2 } from 'lucide-react';
@@ -53,6 +53,7 @@ export default function AppDetail() {
   } | null>(null);
   const [isLoadingResult, setIsLoadingResult] = useState(false);
   const [scheduledRunError, setScheduledRunError] = useState<string | null>(null);
+  const [currentSampleData, setCurrentSampleData] = useState<string>('');
 
   const { data: app, isLoading: isLoadingApp } = useQuery({
     queryKey: ['app', id],
@@ -108,6 +109,7 @@ export default function AppDetail() {
     app,
     versions,
     modelsByVendor,
+    sampleData: currentSampleData,
   });
 
   const { data: stats } = useQuery<AppStats>({
@@ -135,6 +137,10 @@ export default function AppDetail() {
     versionId: selectedVersionId,
     initialSampleData: app?.sampleData,
   });
+
+  useEffect(() => {
+    setCurrentSampleData(sampleData);
+  }, [sampleData]);
 
   const nameEdit = useInlineEdit({
     appId: id!,
