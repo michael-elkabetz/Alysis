@@ -177,9 +177,6 @@ export function ScheduleDialog({
           <div className="flex items-center justify-between py-2">
             <div>
               <Label htmlFor="enabled" className="text-sm">Enabled</Label>
-              <p className="text-xs text-muted-foreground">
-                Start running immediately
-              </p>
             </div>
             <Switch
               id="enabled"
