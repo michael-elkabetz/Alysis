@@ -8,7 +8,9 @@ import {
   getVendorsAndModels,
   getVendorKeyStatuses,
   magicGenerate,
+  getSchedules,
   type App,
+  type AppSchedule,
   type Vendor,
 } from '@/lib/api';
 
@@ -44,6 +46,15 @@ export default function AppsList() {
     queryKey: ['apps'],
     queryFn: () => getApps(),
   });
+
+  const { data: schedules = [] } = useQuery<AppSchedule[]>({
+    queryKey: ['schedules'],
+    queryFn: () => getSchedules(),
+  });
+
+  const scheduledAppIds = new Set(
+    schedules.filter((s) => s.enabled).map((s) => s.appId)
+  );
 
   const { data: vendorsData } = useQuery({
     queryKey: ['vendors-models'],
@@ -214,6 +225,7 @@ export default function AppsList() {
             filteredApps={filteredApps}
             isLoading={isLoading}
             searchQuery={search}
+            scheduledAppIds={scheduledAppIds}
             onClearSearch={() => setSearch('')}
             onCreateApp={() => {
               setInitialDialogValues(undefined);

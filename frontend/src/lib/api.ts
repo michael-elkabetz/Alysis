@@ -26,6 +26,10 @@ async function fetchApi<T>(
     throw new Error(error.error || error.message || `API error: ${response.status}`);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }
 
@@ -896,6 +900,117 @@ export async function executeAppToolUsage(
       body: usageConfig ? JSON.stringify({ usageConfig }) : undefined,
     }
   );
+}
+
+export type ScheduledRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
+export interface AppSchedule {
+  id: string;
+  appId: string;
+  cronExpression: string;
+  timezone: string;
+  enabled: boolean;
+  inputData: Record<string, unknown> | null;
+  nextRunAt: string | null;
+  lastRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledRun {
+  id: string;
+  scheduleId: string;
+  executionLogId: string | null;
+  status: ScheduledRunStatus;
+  scheduledFor: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface ScheduleStats {
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
+}
+
+export interface CreateScheduleDto {
+  appId: string;
+  cronExpression: string;
+  timezone?: string;
+  enabled?: boolean;
+  inputData?: Record<string, unknown>;
+}
+
+export interface UpdateScheduleDto {
+  cronExpression?: string;
+  timezone?: string;
+  enabled?: boolean;
+  inputData?: Record<string, unknown>;
+}
+
+export async function getAppSchedule(
+  appId: string
+): Promise<{ schedule: AppSchedule | null; stats: ScheduleStats | null }> {
+  return fetchApi<{ schedule: AppSchedule | null; stats: ScheduleStats | null }>(
+    `/api/v1/schedules/app/${appId}`
+  );
+}
+
+export async function getScheduledRuns(
+  appId: string,
+  limit = 50,
+  offset = 0
+): Promise<{ runs: ScheduledRun[]; total: number }> {
+  return fetchApi<{ runs: ScheduledRun[]; total: number }>(
+    `/api/v1/schedules/app/${appId}/runs?limit=${limit}&offset=${offset}`
+  );
+}
+
+export async function createSchedule(dto: CreateScheduleDto): Promise<AppSchedule> {
+  return fetchApi<AppSchedule>('/api/v1/schedules', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateSchedule(
+  scheduleId: string,
+  dto: UpdateScheduleDto
+): Promise<AppSchedule> {
+  return fetchApi<AppSchedule>(`/api/v1/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteSchedule(scheduleId: string): Promise<void> {
+  await fetchApi<void>(`/api/v1/schedules/${scheduleId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function triggerSchedule(scheduleId: string): Promise<ScheduledRun> {
+  return fetchApi<ScheduledRun>(`/api/v1/schedules/${scheduleId}/trigger`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteScheduledRun(runId: string): Promise<void> {
+  await fetchApi<void>(`/api/v1/schedules/runs/${runId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function deleteAllScheduledRuns(appId: string): Promise<void> {
+  await fetchApi<void>(`/api/v1/schedules/app/${appId}/runs`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getSchedules(): Promise<AppSchedule[]> {
+  return fetchApi<AppSchedule[]>('/api/v1/schedules');
 }
 
 export type Analysis = App;

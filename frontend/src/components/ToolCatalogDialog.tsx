@@ -881,7 +881,6 @@ export function ToolCatalogDialog({
                           readOnly
                           value={responseDisplay.value}
                           className="w-full h-[200px] p-3 text-xs font-mono bg-transparent text-foreground resize-none focus:outline-none"
-                          style={{ fontFamily: 'JetBrains Mono, monospace' }}
                         />
                       </div>
                     )}

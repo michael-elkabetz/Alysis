@@ -5,6 +5,7 @@ import {
   Trash2,
   Clock,
   ArrowRight,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ const SNOWFLAKE_LOGO = "/sf.png";
 interface AppCardProps {
   app: App;
   animationDelay: number;
+  hasSchedule?: boolean;
   onNavigate: () => void;
   onCopyApiKey: (e: React.MouseEvent) => void;
   onCopyCurl: (e: React.MouseEvent) => void;
@@ -38,6 +40,7 @@ interface AppCardProps {
 export function AppCard({
   app,
   animationDelay,
+  hasSchedule,
   onNavigate,
   onCopyApiKey,
   onCopyCurl,
@@ -59,10 +62,12 @@ export function AppCard({
       aria-label={`Open ${app.name}`}
     >
       <div className="flex items-start justify-between mb-3">
-        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1 pr-2">
-          {app.name}
-        </h3>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+            {app.name}
+          </h3>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button
@@ -133,6 +138,24 @@ export function AppCard({
                   </Tooltip>
                 </TooltipProvider>
               )}
+            </div>
+          )}
+
+          {hasSchedule && (
+            <div className="flex items-center gap-1.5 pl-2 border-l border-border/50">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-1.5 cursor-help hover:text-foreground transition-colors">
+                      <Zap className="w-3.5 h-3.5" />
+                      Autonomous
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Runs autonomously on a schedule</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
         </div>

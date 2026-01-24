@@ -8,6 +8,7 @@ export const toolTypeEnum = pgEnum('tool_type', ['snowflake', 'postgres']);
 
 export const toolCategoryEnum = pgEnum('tool_category', ['database', 'http', 'storage', 'custom']);
 export const executorTypeEnum = pgEnum('executor_type', ['sql', 'http', 'storage', 'custom']);
+export const scheduledRunStatusEnum = pgEnum('scheduled_run_status', ['pending', 'running', 'completed', 'failed', 'skipped']);
 
 export interface JsonSchemaProperty {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -198,3 +199,34 @@ export type NewToolInstance = typeof toolInstances.$inferInsert;
 
 export type AppToolUsageRow = typeof appToolUsages.$inferSelect;
 export type NewAppToolUsage = typeof appToolUsages.$inferInsert;
+
+export const appSchedules = pgTable('app_schedules', {
+  id: text('id').primaryKey(),
+  appId: text('app_id').notNull().unique().references(() => analyses.id, { onDelete: 'cascade' }),
+  cronExpression: text('cron_expression').notNull(),
+  timezone: text('timezone').notNull().default('UTC'),
+  enabled: boolean('enabled').notNull().default(true),
+  inputData: jsonb('input_data').$type<Record<string, unknown>>(),
+  nextRunAt: timestamp('next_run_at'),
+  lastRunAt: timestamp('last_run_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const scheduledRuns = pgTable('scheduled_runs', {
+  id: text('id').primaryKey(),
+  scheduleId: text('schedule_id').notNull().references(() => appSchedules.id, { onDelete: 'cascade' }),
+  executionLogId: text('execution_log_id').references(() => executionLogs.id, { onDelete: 'set null' }),
+  status: scheduledRunStatusEnum('status').notNull().default('pending'),
+  scheduledFor: timestamp('scheduled_for').notNull(),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type AppScheduleRow = typeof appSchedules.$inferSelect;
+export type NewAppSchedule = typeof appSchedules.$inferInsert;
+
+export type ScheduledRunRow = typeof scheduledRuns.$inferSelect;
+export type NewScheduledRun = typeof scheduledRuns.$inferInsert;

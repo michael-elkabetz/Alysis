@@ -21,6 +21,7 @@ import { toolInstanceController } from './modules/tool-instance/tool-instance.co
 import { appToolUsageController } from './modules/app-tool-usage/app-tool-usage.controller'
 import { devToolsController } from './modules/dev-tools/dev-tools.controller'
 import { clientController } from './clients/client.controller'
+import { scheduleController, startScheduleProcessor } from './modules/schedule'
 
 const PORT = process.env.PORT ?? 3001
 
@@ -38,14 +39,10 @@ if (process.env.DATABASE_URL) {
     const isInitialized = checkResult[0]?.exists ?? false
     
     if (!isInitialized) {
-      console.log('Database not initialized. Running initialization from init.sql...')
       const initSqlPath = join(process.cwd(), 'src', 'db', 'init.sql')
       const initSql = readFileSync(initSqlPath, 'utf-8')
       
       await client.unsafe(initSql)
-      console.log('Database initialization completed successfully')
-    } else {
-      console.log('Database already initialized. Skipping initialization.')
     }
     
     await client.end()
@@ -56,6 +53,7 @@ if (process.env.DATABASE_URL) {
 
 await apiKeyService.initialize()
 await toolDefinitionService.initialize()
+startScheduleProcessor()
 
 const app = new Elysia()
   .use(cors({
@@ -83,6 +81,7 @@ const app = new Elysia()
         { name: 'Tool Instances', description: 'Tool instance connection management' },
         { name: 'App Tool Usage', description: 'Per-app tool configuration' },
         { name: 'DevTools', description: 'Developer tools' },
+        { name: 'Schedules', description: 'App scheduling and automated runs' },
       ],
       components: {
         securitySchemes: {
@@ -115,6 +114,7 @@ const app = new Elysia()
   .use(toolInstanceController)
   .use(appToolUsageController)
   .use(devToolsController)
+  .use(scheduleController)
   .listen(PORT)
 
 export type App = typeof app

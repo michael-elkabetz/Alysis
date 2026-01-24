@@ -18,6 +18,8 @@
     "@elysiajs/static": "^1.2.0",
     "@elysiajs/swagger": "^1.2.1",
     "@google/genai": "^1.34.0",
+    "cron": "^4.4.0",
+    "cron-parser": "^5.5.0",
     "drizzle-orm": "^0.38.3",
     "elysia": "^1.2.25",
     "nanoid": "^5.0.9",

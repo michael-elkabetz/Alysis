@@ -9,6 +9,8 @@
 -- ============================================================================
 
 -- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS "scheduled_runs" CASCADE;
+DROP TABLE IF EXISTS "app_schedules" CASCADE;
 DROP TABLE IF EXISTS "app_tool_usages" CASCADE;
 DROP TABLE IF EXISTS "tool_instances" CASCADE;
 DROP TABLE IF EXISTS "tool_definitions" CASCADE;
@@ -20,6 +22,7 @@ DROP TABLE IF EXISTS "tool_configs" CASCADE;
 DROP TABLE IF EXISTS "analyses" CASCADE;
 
 -- Drop custom types and enums
+DROP TYPE IF EXISTS "scheduled_run_status" CASCADE;
 DROP TYPE IF EXISTS "tool_category" CASCADE;
 DROP TYPE IF EXISTS "executor_type" CASCADE;
 DROP TYPE IF EXISTS "analysis_status" CASCADE;
@@ -40,6 +43,7 @@ CREATE TYPE "public"."response_format" AS ENUM('json', 'text');
 CREATE TYPE "public"."tool_type" AS ENUM('snowflake', 'postgres');
 CREATE TYPE "public"."tool_category" AS ENUM('database', 'http', 'storage', 'custom');
 CREATE TYPE "public"."executor_type" AS ENUM('sql', 'http', 'storage', 'custom');
+CREATE TYPE "public"."scheduled_run_status" AS ENUM('pending', 'running', 'completed', 'failed', 'skipped');
 
 -- Analyses Table
 CREATE TABLE "analyses" (
@@ -169,6 +173,45 @@ CREATE INDEX IF NOT EXISTS "idx_app_tool_usages_app" ON "app_tool_usages"("app_i
 CREATE INDEX IF NOT EXISTS "idx_app_tool_usages_instance" ON "app_tool_usages"("tool_instance_id");
 CREATE INDEX IF NOT EXISTS "idx_tool_definitions_category" ON "tool_definitions"("category");
 CREATE INDEX IF NOT EXISTS "idx_tool_configs_tool_type" ON "tool_configs"("tool_type");
+
+-- App Schedules Table - One schedule per app for automated execution
+CREATE TABLE "app_schedules" (
+	"id" text PRIMARY KEY NOT NULL,
+	"app_id" text NOT NULL UNIQUE,
+	"cron_expression" text NOT NULL,
+	"timezone" text NOT NULL DEFAULT 'UTC',
+	"enabled" boolean NOT NULL DEFAULT true,
+	"input_data" jsonb,
+	"next_run_at" timestamp,
+	"last_run_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+
+-- Scheduled Runs Table - Tracks scheduled execution history (job queue)
+CREATE TABLE "scheduled_runs" (
+	"id" text PRIMARY KEY NOT NULL,
+	"schedule_id" text NOT NULL,
+	"execution_log_id" text,
+	"status" "scheduled_run_status" NOT NULL DEFAULT 'pending',
+	"scheduled_for" timestamp NOT NULL,
+	"started_at" timestamp,
+	"completed_at" timestamp,
+	"error_message" text,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
+-- Foreign Key Constraints for Schedules
+ALTER TABLE "app_schedules" ADD CONSTRAINT "app_schedules_app_id_analyses_id_fk" FOREIGN KEY ("app_id") REFERENCES "public"."analyses"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "scheduled_runs" ADD CONSTRAINT "scheduled_runs_schedule_id_app_schedules_id_fk" FOREIGN KEY ("schedule_id") REFERENCES "public"."app_schedules"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "scheduled_runs" ADD CONSTRAINT "scheduled_runs_execution_log_id_execution_logs_id_fk" FOREIGN KEY ("execution_log_id") REFERENCES "public"."execution_logs"("id") ON DELETE set null ON UPDATE no action;
+
+-- Indexes for Schedules
+CREATE INDEX IF NOT EXISTS "idx_app_schedules_app_id" ON "app_schedules"("app_id");
+CREATE INDEX IF NOT EXISTS "idx_app_schedules_enabled_next_run" ON "app_schedules"("enabled", "next_run_at") WHERE "enabled" = true;
+CREATE INDEX IF NOT EXISTS "idx_scheduled_runs_schedule_id" ON "scheduled_runs"("schedule_id");
+CREATE INDEX IF NOT EXISTS "idx_scheduled_runs_status_scheduled" ON "scheduled_runs"("status", "scheduled_for") WHERE "status" = 'pending';
+CREATE INDEX IF NOT EXISTS "idx_scheduled_runs_created_at" ON "scheduled_runs"("created_at" DESC);
 
 -- ============================================================================
 -- SEED DATA - Built-in Tool Definitions

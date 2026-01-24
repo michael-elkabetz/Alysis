@@ -8,6 +8,7 @@ interface AppsGridProps {
   filteredApps: App[];
   isLoading: boolean;
   searchQuery: string;
+  scheduledAppIds?: Set<string>;
   onClearSearch: () => void;
   onCreateApp: () => void;
   onNavigateToApp: (appId: string) => void;
@@ -22,6 +23,7 @@ export function AppsGrid({
   filteredApps,
   isLoading,
   searchQuery,
+  scheduledAppIds,
   onClearSearch,
   onCreateApp,
   onNavigateToApp,
@@ -80,6 +82,7 @@ export function AppsGrid({
           key={app.id}
           app={app}
           animationDelay={index * 40}
+          hasSchedule={scheduledAppIds?.has(app.id)}
           onNavigate={() => onNavigateToApp(app.id)}
           onCopyApiKey={(e) => onCopyApiKey(e, app.id)}
           onCopyCurl={(e) => onCopyCurl(e, app.id)}

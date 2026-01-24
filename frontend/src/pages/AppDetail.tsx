@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Play, Activity, Loader2, Terminal } from 'lucide-react';
+import { ArrowLeft, Save, Play, Activity, Loader2, Terminal, Trash2 } from 'lucide-react';
 import {
   getApp,
   getPromptVersions,
@@ -9,6 +9,7 @@ import {
   getVendorsAndModels,
   getVendorKeyStatuses,
   deleteApp,
+  getExecutionLog,
   type AppStats,
   type PromptVersion,
   type Vendor,
@@ -22,11 +23,11 @@ import { DeleteAppDialog, DeleteVersionDialog } from '@/features/app/components/
 import { VersionSelector } from '@/features/app/components/VersionSelector';
 import { ModelSelector } from '@/features/app/components/ModelSelector';
 import { InlineEditField } from '@/features/app/components/InlineEditField';
-import { AppActionsMenu } from '@/features/app/components/AppActionsMenu';
 import { VersionCostStats } from '@/features/app/components/VersionCostStats';
-import { TestResultSheet } from '@/features/app/components/TestResultSheet';
+import { ExecutionResultSheet } from '@/features/app/components/ExecutionResultSheet';
 import { DevSpaceSheet } from '@/features/app/components/DevSpaceSheet';
 import { ToolUsagePanel } from '@/features/app/components/ToolUsagePanel';
+import { SchedulePanel } from '@/features/app/components/SchedulePanel';
 import { useTestRunner } from '@/features/app/hooks/useTestRunner';
 import { usePromptEditor } from '@/features/app/hooks/usePromptEditor';
 import { useInlineEdit } from '@/features/app/hooks/useInlineEdit';
@@ -43,6 +44,15 @@ export default function AppDetail() {
   const [isResultCollapsed, setIsResultCollapsed] = useState(false);
   const [isDevSpaceOpen, setIsDevSpaceOpen] = useState(false);
   const [isDevSpaceCollapsed, setIsDevSpaceCollapsed] = useState(true);
+  const [viewedResult, setViewedResult] = useState<{
+    output: Record<string, unknown>;
+    rawResponse: string;
+    latencyMs: number;
+    tokenUsage: { prompt: number; completion: number; total: number };
+    error?: string | null;
+  } | null>(null);
+  const [isLoadingResult, setIsLoadingResult] = useState(false);
+  const [scheduledRunError, setScheduledRunError] = useState<string | null>(null);
 
   const { data: app, isLoading: isLoadingApp } = useQuery({
     queryKey: ['app', id],
@@ -139,7 +149,7 @@ export default function AppDetail() {
     initialValue: app?.description || '',
   });
 
-  const { apiKey, copyApiKey, copyCurl, copyAppId } = useAppApiKey({ appId: id! });
+  const { apiKey } = useAppApiKey({ appId: id! });
 
   const handleDelete = async () => {
     try {
@@ -169,6 +179,7 @@ export default function AppDetail() {
   };
 
   const handleTest = () => {
+    setViewedResult(null); // Clear any viewed scheduled result
     runTest({
       systemPrompt: promptState.systemPrompt,
       vendor: promptState.vendor as Vendor,
@@ -179,6 +190,7 @@ export default function AppDetail() {
   const handleResultPanelClose = (open: boolean) => {
     if (!open) {
       setIsResultCollapsed(true);
+      setViewedResult(null); // Clear viewed result when closing
     }
     setIsResultPanelOpen(open);
   };
@@ -198,6 +210,44 @@ export default function AppDetail() {
   const handleExpandDevSpace = () => {
     setIsDevSpaceOpen(true);
     setIsDevSpaceCollapsed(false);
+  };
+
+  const handleScheduledRunComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['app-stats', id, selectedVersionId] });
+  };
+
+  const handleViewScheduledResult = async (executionLogId: string | null, errorMessage?: string | null) => {
+    setScheduledRunError(null);
+    setViewedResult(null);
+    
+    if (errorMessage && !executionLogId) {
+      setScheduledRunError(errorMessage);
+      setIsResultPanelOpen(true);
+      setIsResultCollapsed(false);
+      return;
+    }
+    
+    if (!executionLogId) return;
+    
+    try {
+      setIsLoadingResult(true);
+      setIsResultPanelOpen(true);
+      setIsResultCollapsed(false);
+      const log = await getExecutionLog(executionLogId);
+      if (log) {
+        setViewedResult({
+          output: log.output || {},
+          rawResponse: log.rawResponse || '',
+          latencyMs: log.latencyMs,
+          tokenUsage: log.tokenUsage || { prompt: 0, completion: 0, total: 0 },
+          error: log.errorMessage,
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to load execution result');
+    } finally {
+      setIsLoadingResult(false);
+    }
   };
 
   if (isLoadingApp) {
@@ -277,7 +327,7 @@ export default function AppDetail() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <VersionSelector
               versions={versions}
               selectedVersionId={selectedVersionId}
@@ -285,6 +335,8 @@ export default function AppDetail() {
               onSelectVersion={handleSelectVersion}
               onDeleteVersion={setVersionToDelete}
             />
+
+            <div className="w-px h-6 bg-border mx-1" />
 
             <ModelSelector
               vendor={promptState.vendor}
@@ -295,12 +347,59 @@ export default function AppDetail() {
               onModelChange={updateModel}
             />
 
-            <AppActionsMenu
-              onCopyAppId={copyAppId}
-              onCopyApiKey={copyApiKey}
-              onCopyCurl={copyCurl}
-              onDelete={() => setShowDeleteDialog(true)}
-            />
+            <div className="w-px h-6 bg-border mx-1" />
+
+            <Button
+              onClick={handleTest}
+              disabled={isTesting || !sampleData.trim() || !promptState.systemPrompt.trim()}
+              className="btn-secondary gap-2 h-9"
+              size="sm"
+              title="Execute Prompt"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="hidden lg:inline">Running...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  <span className="hidden lg:inline">Execute</span>
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || (!isSelectedDifferentFromActive && !promptState.systemPrompt.trim())}
+              className="btn-primary gap-2 h-9"
+              size="sm"
+              title={isSelectedDifferentFromActive ? 'Activate Version' : 'Save Version'}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="hidden lg:inline">{isSelectedDifferentFromActive ? 'Activating...' : 'Saving...'}</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span className="hidden lg:inline">{isSelectedDifferentFromActive ? 'Activate' : 'Save'}</span>
+                </>
+              )}
+            </Button>
+
+            <div className="w-px h-6 bg-border mx-1" />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setShowDeleteDialog(true)}
+              title="Delete App"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
         </header>
 
@@ -311,63 +410,19 @@ export default function AppDetail() {
           onSampleDataChange={setSampleData}
         />
 
-        <ToolUsagePanel appId={id!} />
-
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            onClick={() => setIsDevSpaceOpen(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Terminal className="w-4 h-4" />
-            Developer Space
-          </Button>
-
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handleTest}
-              disabled={isTesting || !sampleData.trim() || !promptState.systemPrompt.trim()}
-              className="btn-secondary gap-2"
-            >
-              {isTesting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Execute
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || (!isSelectedDifferentFromActive && !promptState.systemPrompt.trim())}
-              className="btn-primary gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isSelectedDifferentFromActive ? 'Activating...' : 'Saving...'}
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  {isSelectedDifferentFromActive ? 'Activate' : 'Save'}
-                </>
-              )}
-            </Button>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 mb-6">
+          <ToolUsagePanel appId={id!} />
+          <SchedulePanel appId={id!} sampleData={sampleData} onViewResult={handleViewScheduledResult} onRunComplete={handleScheduledRunComplete} />
         </div>
       </div>
 
-      <TestResultSheet
+      <ExecutionResultSheet
         isOpen={isResultPanelOpen}
         onOpenChange={handleResultPanelClose}
-        isLoading={isTesting}
-        testStatus={testStatus}
-        result={testResult}
+        isLoading={isTesting || isLoadingResult}
+        status={testStatus}
+        result={viewedResult || testResult}
+        error={scheduledRunError}
       />
 
       <DevSpaceSheet

@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid'
 import { appRepository } from './app.repository'
 import { promptRepository } from '../prompt/prompt.repository'
 import { apiKeyService } from '../api-key/api-key.service'
+import { toolConfigService } from '../tool-config/tool-config.service'
 import { inferVendor, getAllClients, getClient } from '../../clients'
 import { DEFAULTS, ID_PREFIXES } from '../../shared/constants'
 import { generateInterfaces } from '../../shared/interfaces'
@@ -148,5 +149,17 @@ Do not include markdown formatting like \`\`\`json. Return only the raw JSON.`
 
   async getCount(): Promise<{ total: number; active: number }> {
     return appRepository.count()
+  },
+
+  async testToolQuery(id: string, providedQuery?: string): Promise<{ success: boolean; rowCount?: number; error?: string; data?: unknown } | null> {
+    const app = await appRepository.findById(id)
+    if (!app) return null
+
+    const query = providedQuery || app.toolUsage?.snowflake?.query
+    if (!query) {
+      return { success: false, error: 'No query provided and app has no configured query' }
+    }
+
+    return toolConfigService.testQuery('snowflake', query)
   },
 }

@@ -1,7 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { appService } from './app.service'
 import { executionService } from '../execution/execution.service'
-import { toolConfigService } from '../tool-config/tool-config.service'
 import { DEFAULTS, LIMITS } from '../../shared/constants'
 import { handleControllerError } from '../../utils/http'
 
@@ -217,19 +216,14 @@ export const appController = new Elysia({ prefix: '/api/v1/apps' })
 
   .post('/:id/test-tool', async ({ params, body, set }) => {
     try {
-      const app = await appService.getById(params.id)
-      if (!app) {
+      const result = await appService.testToolQuery(params.id, body.query)
+      if (result === null) {
         set.status = 404
         return { error: 'App not found' }
       }
-
-      const query = body.query || app.toolUsage?.snowflake?.query
-      if (!query) {
+      if (!result.success && result.error === 'No query provided and app has no configured query') {
         set.status = 400
-        return { error: 'No query provided and app has no configured query' }
       }
-
-      const result = await toolConfigService.testQuery('snowflake', query)
       return result
     } catch (error) {
       return handleControllerError(error, set, 'Failed to test tool query')

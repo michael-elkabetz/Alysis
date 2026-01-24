@@ -49,7 +49,6 @@ async function fetchToolData(
 ): Promise<Record<string, unknown> | null> {
   const toolData: Record<string, unknown> = {}
 
-  // Fetch from legacy tool usage (snowflake/postgres in app.toolUsage)
   if (toolUsage?.snowflake?.enabled && toolUsage.snowflake.query) {
     try {
       const result = await toolConfigService.executeQuery(
@@ -59,7 +58,6 @@ async function fetchToolData(
       toolData._snowflakeData = result.rows
       toolData._snowflakeRowCount = result.rowCount
     } catch (error) {
-      // Log but continue
     }
   }
 
@@ -72,11 +70,9 @@ async function fetchToolData(
       toolData._postgresData = result.rows
       toolData._postgresRowCount = result.rowCount
     } catch (error) {
-      // Log but continue
     }
   }
 
-  // Fetch from new app tool usages (tool instances attached to app)
   try {
     const appToolResults = await appToolUsageService.executeAllForApp(appId)
     for (const [toolName, result] of appToolResults) {
@@ -86,7 +82,6 @@ async function fetchToolData(
       }
     }
   } catch (error) {
-    // Log but continue
   }
 
   return Object.keys(toolData).length > 0 ? toolData : null
@@ -125,10 +120,11 @@ export const executionService = {
     }
 
     const toolData = await fetchToolData(app.id, app.toolUsage)
+    const safeInput = dto.input && typeof dto.input === 'object' ? dto.input : {}
 
     const enrichedInput = toolData
-      ? { ...dto.input, ...toolData }
-      : dto.input
+      ? { ...safeInput, ...toolData }
+      : safeInput
 
     return this.executeWithPrompt(analysisId, promptVersion.id, promptVersion, enrichedInput, callerService)
   },
@@ -140,11 +136,11 @@ export const executionService = {
       throw new Error(`Prompt version not found: ${promptId}`)
     }
 
-    // Fetch tool data for the app
     const toolData = app ? await fetchToolData(app.id, app.toolUsage) : null
+    const safeInput = input && typeof input === 'object' ? input : {}
     const enrichedInput = toolData
-      ? { ...input, ...toolData }
-      : input
+      ? { ...safeInput, ...toolData }
+      : safeInput
 
     return this.executeWithPrompt(analysisId, promptId, promptVersion, enrichedInput, callerService)
   },
@@ -160,10 +156,8 @@ export const executionService = {
     const client = getClient(vendorName)
     const startTime = performance.now()
 
-    // Fetch tool data if analysisId is provided
-    let enrichedInput = dto.input
+    let enrichedInput = dto.input && typeof dto.input === 'object' ? dto.input : {}
     if (analysisId) {
-      console.log(`[ExecutionService] Fetching tool data for app: ${analysisId}`)
       try {
         const toolData = await appToolUsageService.executeAllForApp(analysisId)
         if (toolData && toolData.size > 0) {
@@ -175,14 +169,10 @@ export const executionService = {
             }
           }
           if (Object.keys(toolDataObj).length > 0) {
-            enrichedInput = { ...dto.input, ...toolDataObj }
-            console.log(`[ExecutionService] Tool data added to input: ${Object.keys(toolDataObj).join(', ')}`)
+            enrichedInput = { ...enrichedInput, ...toolDataObj }
           }
-        } else {
-          console.log(`[ExecutionService] No tool data returned for app: ${analysisId}`)
         }
       } catch (error) {
-        console.warn(`[ExecutionService] Failed to fetch tool data: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
 
@@ -206,7 +196,7 @@ export const executionService = {
           analysisId,
           versionId: versionId || null,
           status: 'success',
-          input: dto.input,
+          input: dto.input || {},
           output,
           rawResponse: response.content,
           latencyMs,
@@ -221,7 +211,7 @@ export const executionService = {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
       if (analysisId) {
-        await this.logFailure(analysisId, errorMessage, dto.input, latencyMs, ERROR_TYPES.TEST, versionId)
+        await this.logFailure(analysisId, errorMessage, dto.input || {}, latencyMs, ERROR_TYPES.TEST, versionId)
       }
 
       return {
@@ -250,15 +240,15 @@ export const executionService = {
     await executionRepository.create({
       id,
       analysisId: params.analysisId,
-      versionId: params.versionId || null,
+      versionId: params.versionId ?? null,
       input: params.input || {},
-      output: params.output || null,
-      rawResponse: params.rawResponse || null,
+      output: params.output ?? null,
+      rawResponse: params.rawResponse ?? null,
       latencyMs: params.latencyMs,
-      tokenUsage: params.tokenUsage || null,
+      tokenUsage: params.tokenUsage ?? null,
       status: params.status,
-      errorMessage: params.errorMessage || null,
-      callerService: params.callerService || null,
+      errorMessage: params.errorMessage ?? null,
+      callerService: params.callerService ?? null,
     })
   },
 
@@ -273,7 +263,7 @@ export const executionService = {
   ): Promise<void> {
     await this.log({
       analysisId,
-      versionId: versionId || null,
+      versionId: versionId ?? null,
       status: 'error',
       input,
       latencyMs,
@@ -292,9 +282,10 @@ export const executionService = {
     const id = `${ID_PREFIXES.EXECUTION}${nanoid(10)}`
     const startTime = performance.now()
     const client = getClient(promptVersion.vendor)
+    const safeInput = input && typeof input === 'object' ? input : {}
 
     try {
-      const response = await client.complete(promptVersion.systemPrompt, JSON.stringify(input), {
+      const response = await client.complete(promptVersion.systemPrompt, JSON.stringify(safeInput), {
         model: promptVersion.model,
         temperature: promptVersion.temperature,
         maxTokens: promptVersion.maxTokens,
@@ -312,13 +303,13 @@ export const executionService = {
         id,
         analysisId,
         versionId,
-        input,
+        input: safeInput,
         output,
         rawResponse: response.content,
         latencyMs,
         tokenUsage: response.tokenUsage,
         status: 'success',
-        callerService: callerService || null,
+        callerService: callerService ?? null,
       })
     } catch (error) {
       const latencyMs = Math.round(performance.now() - startTime)
@@ -328,14 +319,14 @@ export const executionService = {
         id,
         analysisId,
         versionId,
-        input,
+        input: safeInput,
         output: null,
         rawResponse: null,
         latencyMs,
         tokenUsage: null,
         status: 'error',
         errorMessage,
-        callerService: callerService || null,
+        callerService: callerService ?? null,
       })
     }
   },

@@ -1,4 +1,4 @@
-import { History, Trash2 } from 'lucide-react';
+import { History, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,21 +34,21 @@ export function VersionSelector({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          className="h-10 gap-2 bg-secondary/50 border-border hover:bg-secondary hover:border-primary/30 transition-all"
+          variant="ghost"
+          className="h-10 w-[140px] justify-between bg-secondary border border-border hover:bg-secondary/80 px-3 font-normal rounded-md"
         >
-          <History className="w-4 h-4" />
-          <span className="text-sm font-medium">
-            v{selectedVersion?.version || latestVersion?.version}
-          </span>
-          {selectedVersion?.id === latestVersion?.id && (
-            <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary/20 text-primary">
-              Latest
-            </span>
-          )}
+          <div className="flex items-center gap-2 truncate">
+            <span>v{selectedVersion?.version || latestVersion?.version}</span>
+            {selectedVersion?.id === latestVersion?.id && (
+              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary/20 text-primary">
+                Latest
+              </span>
+            )}
+          </div>
+          <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-card border-border w-64">
+      <DropdownMenuContent align="start" className="bg-card border-border w-[140px]">
         <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
           Version History
         </div>
@@ -73,9 +73,6 @@ export function VersionSelector({
                     Latest
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground">
-                  {formatRelativeTime(version.createdAt)}
-                </span>
               </div>
               {versions.length > 1 && (
                 <button

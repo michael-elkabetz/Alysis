@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { TestResultSheet } from './TestResultSheet';
+import { ExecutionResultSheet } from './ExecutionResultSheet';
 import { useTestRunner, generateInterfacesFromOutput } from '../hooks/useTestRunner';
 
 interface CreateAppDialogProps {
@@ -615,11 +615,11 @@ export function CreateAppDialog({
         </div>
       </DialogContent>
 
-      <TestResultSheet
+      <ExecutionResultSheet
         isOpen={isResultPanelOpen}
         onOpenChange={setIsResultPanelOpen}
         isLoading={isTesting}
-        testStatus={testStatus}
+        status={testStatus}
         result={testResult}
       />
     </Dialog>

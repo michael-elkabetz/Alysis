@@ -4,6 +4,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator,
 } from '@/components/ui/select';
 
 interface VendorOption {
@@ -40,6 +41,10 @@ export function ModelSelector({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-card border-border">
+          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            Provider
+          </div>
+          <SelectSeparator />
           {vendors.map((v) => (
             <SelectItem key={v.id} value={v.id} className="focus:bg-secondary">
               {v.displayName}
@@ -53,6 +58,10 @@ export function ModelSelector({
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-card border-border">
+          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+            Model
+          </div>
+          <SelectSeparator />
           {models.map((m) => (
             <SelectItem key={m.id} value={m.id} className="focus:bg-secondary">
               {m.displayName}

@@ -73,6 +73,12 @@ export const appToolUsageService = {
     return usage ? toResponse(usage) : null
   },
 
+  async getByIdForApp(id: string, appId: string): Promise<AppToolUsageResponse | null> {
+    const usage = await appToolUsageRepository.findById(id)
+    if (!usage || usage.appId !== appId) return null
+    return toResponse(usage)
+  },
+
   async create(dto: CreateAppToolUsageDto): Promise<AppToolUsageResponse> {
     const instance = await toolInstanceRepository.findById(dto.toolInstanceId)
     if (!instance) {
@@ -118,6 +124,42 @@ export const appToolUsageService = {
     }
 
     return toResponse(updated)
+  },
+
+  async updateForApp(id: string, appId: string, dto: UpdateAppToolUsageDto): Promise<AppToolUsageResponse | null> {
+    const existing = await appToolUsageRepository.findById(id)
+    if (!existing || existing.appId !== appId) return null
+    return this.update(id, dto)
+  },
+
+  async deleteForApp(id: string, appId: string): Promise<boolean | null> {
+    const existing = await appToolUsageRepository.findById(id)
+    if (!existing || existing.appId !== appId) return null
+    return appToolUsageRepository.delete(id)
+  },
+
+  async toggleForApp(id: string, appId: string, enabled: boolean): Promise<AppToolUsageResponse | null> {
+    const existing = await appToolUsageRepository.findById(id)
+    if (!existing || existing.appId !== appId) return null
+    return this.update(id, { enabled })
+  },
+
+  async testQueryForApp(id: string, appId: string): Promise<{ success: boolean; rowCount?: number; error?: string } | null> {
+    const usage = await appToolUsageRepository.findById(id)
+    if (!usage || usage.appId !== appId) return null
+    const executorType = usage.definition.executorType as ExecutorType
+    return executorRegistry.testQuery(executorType, usage.instance.config, usage.usageConfig)
+  },
+
+  async executeForApp(id: string, appId: string, overrideUsageConfig?: Record<string, unknown>): Promise<{ success: boolean; data?: unknown; rowCount?: number; error?: string } | null> {
+    const usage = await appToolUsageRepository.findById(id)
+    if (!usage || usage.appId !== appId) return null
+    if (!usage.enabled) {
+      return { success: false, error: 'Tool is disabled for this app' }
+    }
+    const executorType = usage.definition.executorType as ExecutorType
+    const usageConfig = overrideUsageConfig || usage.usageConfig
+    return executorRegistry.execute(executorType, usage.instance.config, usageConfig)
   },
 
   async upsert(appId: string, toolInstanceId: string, dto: UpdateAppToolUsageDto): Promise<AppToolUsageResponse> {
@@ -179,32 +221,16 @@ export const appToolUsageService = {
   },
 
   async executeAllForApp(appId: string): Promise<Map<string, { success: boolean; data?: unknown; error?: string }>> {
-    console.log(`[AppToolUsageService] executeAllForApp called for app: ${appId}`)
-    
     const usages = await appToolUsageRepository.findByAppId(appId)
-    console.log(`[AppToolUsageService] Found ${usages.length} tool usages for app ${appId}`)
-    
     const enabledUsages = usages.filter(u => u.enabled)
-    console.log(`[AppToolUsageService] ${enabledUsages.length} tool usages are enabled`)
-    
     const results = new Map<string, { success: boolean; data?: unknown; error?: string }>()
 
     for (const usage of enabledUsages) {
-      console.log(`[AppToolUsageService] Executing tool: ${usage.definition.name} (instance: ${usage.instance.name}, id: ${usage.id})`)
-      console.log(`[AppToolUsageService] Usage config: ${JSON.stringify(usage.usageConfig)}`)
-      
       const executorType = usage.definition.executorType as ExecutorType
       const result = await executorRegistry.execute(executorType, usage.instance.config, usage.usageConfig)
-      
-      console.log(`[AppToolUsageService] Tool ${usage.definition.name} result: success=${result.success}, hasData=${result.data !== undefined}`)
-      if (!result.success) {
-        console.warn(`[AppToolUsageService] Tool ${usage.definition.name} execution failed: ${result.error}`)
-      }
-
       results.set(usage.definition.name, result)
     }
 
-    console.log(`[AppToolUsageService] executeAllForApp returning ${results.size} tool results`)
     return results
   },
 }
