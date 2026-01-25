@@ -15,6 +15,8 @@ import {
   Play,
   Code2,
   Bell,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from 'lucide-react';
 import {
   getToolDefinitions,
@@ -26,6 +28,7 @@ import {
   type ToolDefinition,
   type ToolInstanceStatus,
   type ToolCategory,
+  type ToolDirection,
 } from '@/lib/api';
 import {
   Dialog,
@@ -68,6 +71,23 @@ const CATEGORY_CONFIG: Record<ToolCategory, { label: string; icon: typeof Databa
   storage: { label: 'Storage', icon: HardDrive, color: 'text-purple-500' },
   notification: { label: 'Notifications', icon: Bell, color: 'text-pink-500' },
   custom: { label: 'Custom', icon: Puzzle, color: 'text-orange-500' },
+};
+
+const DIRECTION_CONFIG: Record<ToolDirection, { label: string; description: string; icon: typeof ArrowDownToLine; color: string; bgColor: string }> = {
+  input: {
+    label: 'Input Tools',
+    description: 'Fetch data from external sources',
+    icon: ArrowDownToLine,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+  },
+  output: {
+    label: 'Output Tools',
+    description: 'Send results & notifications',
+    icon: ArrowUpFromLine,
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10',
+  },
 };
 
 interface ToolCatalogDialogProps {
@@ -147,13 +167,17 @@ export function ToolCatalogDialog({
     return DATABASE_TOOLS.includes(inst.definitionName) && matchesSearch;
   });
 
-  const toolsByCategory = filteredDefinitions.reduce((acc, def) => {
-    if (!acc[def.category]) {
-      acc[def.category] = [];
+  const toolsByDirection = filteredDefinitions.reduce((acc, def) => {
+    const direction = def.direction || 'input';
+    if (!acc[direction]) {
+      acc[direction] = {};
     }
-    acc[def.category].push(def);
+    if (!acc[direction][def.category]) {
+      acc[direction][def.category] = [];
+    }
+    acc[direction][def.category].push(def);
     return acc;
-  }, {} as Record<ToolCategory, ToolDefinition[]>);
+  }, {} as Record<ToolDirection, Record<ToolCategory, ToolDefinition[]>>);
 
 
   const isHttpTool = selectedDefinition?.name === 'http';
@@ -600,53 +624,6 @@ export function ToolCatalogDialog({
                     </div>
                 ) : (
                    <div className="space-y-6">
-                        {databaseInstances.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Database className={cn('w-4 h-4', CATEGORY_CONFIG.database.color)} />
-                              <span className="text-sm font-medium">Data Sources</span>
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1">
-                                from Settings
-                              </Badge>
-                            </div>
-                            <div className="space-y-1.5">
-                              {databaseInstances.map((instance) => (
-                                <button
-                                  key={instance.id}
-                                  onClick={() => handleSelectDatabaseInstance(instance)}
-                                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card/50 hover:bg-secondary/50 hover:border-primary/30 transition-all text-left group"
-                                >
-                                  {getToolIconUrl(instance.definitionName) ? (
-                                    <div className="w-9 h-9 rounded-md bg-white shadow-sm border border-border/30 flex items-center justify-center p-1.5 flex-shrink-0">
-                                      <img
-                                        src={getToolIconUrl(instance.definitionName)!}
-                                        alt={instance.displayName}
-                                        className="w-full h-full object-contain"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
-                                      <Database className="w-4 h-4 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">{instance.name}</span>
-                                      <Badge variant="outline" className="text-[9px] h-4 px-1 opacity-60">
-                                        {instance.displayName}
-                                      </Badge>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      Configure query for this connection
-                                    </p>
-                                  </div>
-                                  <Plus className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         {filteredDefinitions.length === 0 && databaseInstances.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">
                                 <Puzzle className="w-10 h-10 mx-auto mb-3 opacity-50" />
@@ -654,23 +631,91 @@ export function ToolCatalogDialog({
                                 <p className="text-sm mt-1">Configure data sources in Settings first</p>
                             </div>
                         ) : (
-                            Object.entries(CATEGORY_CONFIG).map(([category, cfg]) => {
-                                if (category === 'database') return null;
+                            (['input', 'output'] as ToolDirection[]).map((direction) => {
+                                const directionConfig = DIRECTION_CONFIG[direction];
+                                const categoriesInDirection = toolsByDirection[direction] || {};
+                                const hasTools = Object.values(categoriesInDirection).some(arr => arr.length > 0);
+                                
+                                if (!hasTools && !(direction === 'input' && databaseInstances.length > 0)) return null;
 
-                                const categoryDefs = toolsByCategory[category as ToolCategory] || [];
-                                if (categoryDefs.length === 0) return null;
-        
-                                const Icon = cfg.icon;
+                                const DirectionIcon = directionConfig.icon;
+
                                 return (
-                                <div key={category}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                    <Icon className={cn('w-4 h-4', cfg.color)} />
-                                    <span className="text-sm font-medium">{cfg.label}</span>
+                                  <div key={direction} className="space-y-4">
+                                    <div className={cn('flex items-center gap-2 px-3 py-2 rounded-lg', directionConfig.bgColor)}>
+                                      <DirectionIcon className={cn('w-4 h-4', directionConfig.color)} />
+                                      <div>
+                                        <span className={cn('text-sm font-semibold', directionConfig.color)}>{directionConfig.label}</span>
+                                        <p className="text-xs text-muted-foreground">{directionConfig.description}</p>
+                                      </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                    {categoryDefs.map(renderDefinitionItem)}
-                                    </div>
-                                </div>
+
+                                    {direction === 'input' && databaseInstances.length > 0 && (
+                                      <div className="pl-2">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <Database className={cn('w-4 h-4', CATEGORY_CONFIG.database.color)} />
+                                          <span className="text-sm font-medium">Data Sources</span>
+                                          <Badge variant="secondary" className="text-[9px] h-4 px-1">
+                                            from Settings
+                                          </Badge>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          {databaseInstances.map((instance) => (
+                                            <button
+                                              key={instance.id}
+                                              onClick={() => handleSelectDatabaseInstance(instance)}
+                                              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card/50 hover:bg-secondary/50 hover:border-primary/30 transition-all text-left group"
+                                            >
+                                              {getToolIconUrl(instance.definitionName) ? (
+                                                <div className="w-9 h-9 rounded-md bg-white shadow-sm border border-border/30 flex items-center justify-center p-1.5 flex-shrink-0">
+                                                  <img
+                                                    src={getToolIconUrl(instance.definitionName)!}
+                                                    alt={instance.displayName}
+                                                    className="w-full h-full object-contain"
+                                                  />
+                                                </div>
+                                              ) : (
+                                                <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center flex-shrink-0">
+                                                  <Database className="w-4 h-4 text-muted-foreground" />
+                                                </div>
+                                              )}
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-medium text-sm">{instance.name}</span>
+                                                  <Badge variant="outline" className="text-[9px] h-4 px-1 opacity-60">
+                                                    {instance.displayName}
+                                                  </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                  Configure query for this connection
+                                                </p>
+                                              </div>
+                                              <Plus className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {Object.entries(CATEGORY_CONFIG).map(([category, cfg]) => {
+                                      if (category === 'database') return null;
+                                      const categoryDefs = categoriesInDirection[category as ToolCategory] || [];
+                                      if (categoryDefs.length === 0) return null;
+
+                                      const CategoryIcon = cfg.icon;
+                                      return (
+                                        <div key={category} className="pl-2">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <CategoryIcon className={cn('w-4 h-4', cfg.color)} />
+                                            <span className="text-sm font-medium">{cfg.label}</span>
+                                          </div>
+                                          <div className="space-y-1.5">
+                                            {categoryDefs.map(renderDefinitionItem)}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 );
                             })
                         )}

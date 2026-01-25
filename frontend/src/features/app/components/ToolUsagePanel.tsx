@@ -17,6 +17,8 @@ import {
   Trash2,
   Wrench,
   Pencil,
+  ArrowDownToLine,
+  ArrowUpFromLine,
 } from 'lucide-react';
 import {
   getToolInstanceStatuses,
@@ -29,6 +31,7 @@ import {
   type ToolInstanceStatus,
   type AppToolUsageV2,
   type JsonSchema,
+  type ToolDirection,
 } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +48,23 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ToolCatalogDialog } from '@/components/ToolCatalogDialog';
 import { getToolIconUrl } from '@/lib/tool-icons';
+
+const DIRECTION_CONFIG: Record<ToolDirection, { label: string; description: string; icon: typeof ArrowDownToLine; color: string; bgColor: string }> = {
+  input: {
+    label: 'Input Tools',
+    description: 'Fetch data from external sources',
+    icon: ArrowDownToLine,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-500/10',
+  },
+  output: {
+    label: 'Output Tools',
+    description: 'Send results & notifications',
+    icon: ArrowUpFromLine,
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10',
+  },
+};
 
 interface ToolUsagePanelProps {
   appId: string;
@@ -97,6 +117,7 @@ export function ToolUsagePanel({ appId }: ToolUsagePanelProps) {
       displayName: usage.definition.displayName,
       category: usage.definition.category,
       executorType: usage.definition.executorType,
+      direction: usage.definition.direction,
       configured: true,
       maskedConfig: {},
       updatedAt: usage.updatedAt,
@@ -105,8 +126,12 @@ export function ToolUsagePanel({ appId }: ToolUsagePanelProps) {
     return {
       instance: instance ?? fallbackInstance,
       usage,
+      direction: usage.definition.direction || 'input',
     };
   });
+
+  const inputTools = appInstances.filter((item) => item.direction === 'input');
+  const outputTools = appInstances.filter((item) => item.direction === 'output');
 
   if (loadingUsages) {
     return (
@@ -140,36 +165,59 @@ export function ToolUsagePanel({ appId }: ToolUsagePanelProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {appInstances.map(({ instance, usage }) => (
-          <ToolUsageCard 
-            key={instance.id} 
-            appId={appId} 
-            instance={instance} 
-            usage={usage}
-            usageSchema={usage.definition.usageSchema}
-          />
-        ))}
+      {appInstances.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-border/60 rounded-xl bg-secondary/5">
+          <Puzzle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">No tools configured</p>
+          <p className="text-sm mb-4">
+            Add an HTTP request or other tool connection
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCatalogDialogOpen(true)}
+            className="gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Tool
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {(['input', 'output'] as ToolDirection[]).map((direction) => {
+            const tools = direction === 'input' ? inputTools : outputTools;
+            if (tools.length === 0) return null;
 
-        {appInstances.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground border border-dashed border-border/60 rounded-xl bg-secondary/5">
-            <Puzzle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No tools configured</p>
-            <p className="text-sm mb-4">
-              Add an HTTP request or other tool connection
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCatalogDialogOpen(true)}
-              className="gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Tool
-            </Button>
-          </div>
-        )}
-      </div>
+            const directionConfig = DIRECTION_CONFIG[direction];
+            const DirectionIcon = directionConfig.icon;
+
+            return (
+              <div key={direction} className="space-y-3">
+                <div className={cn('flex items-center gap-2 px-3 py-2 rounded-lg', directionConfig.bgColor)}>
+                  <DirectionIcon className={cn('w-4 h-4', directionConfig.color)} />
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-sm font-semibold', directionConfig.color)}>{directionConfig.label}</span>
+                    <Badge variant="secondary" className="text-[10px] h-5">
+                      {tools.length}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 pl-2">
+                  {tools.map(({ instance, usage }) => (
+                    <ToolUsageCard 
+                      key={instance.id} 
+                      appId={appId} 
+                      instance={instance} 
+                      usage={usage}
+                      usageSchema={usage.definition.usageSchema}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <ToolCatalogDialog
         open={catalogDialogOpen}

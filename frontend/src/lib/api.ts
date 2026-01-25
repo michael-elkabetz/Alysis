@@ -617,6 +617,7 @@ export async function testAppToolQuery(
 
 export type ToolCategory = 'database' | 'http' | 'storage' | 'notification' | 'custom';
 export type ExecutorType = 'sql' | 'http' | 'storage' | 'notification' | 'custom';
+export type ToolDirection = 'input' | 'output';
 
 export interface JsonSchemaProperty {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array';
@@ -641,6 +642,7 @@ export interface ToolDefinition {
   description: string | null;
   category: ToolCategory;
   executorType: ExecutorType;
+  direction: ToolDirection;
   configSchema: JsonSchema;
   usageSchema: JsonSchema;
   builtIn: boolean;
@@ -674,9 +676,9 @@ export interface ToolInstanceStatus {
   toolDefinitionId: string;
   definitionName: string;
   displayName: string;
-  category: string;
-  executorType: string;
-  direction?: string;
+  category: ToolCategory;
+  executorType: ExecutorType;
+  direction: ToolDirection;
   configured: boolean;
   maskedConfig: Record<string, unknown>;
   updatedAt: string;
@@ -696,9 +698,9 @@ export interface AppToolUsageV2 {
     id: string;
     name: string;
     displayName: string;
-    category: string;
-    executorType: string;
-    direction?: string;
+    category: ToolCategory;
+    executorType: ExecutorType;
+    direction: ToolDirection;
     usageSchema: JsonSchema;
   };
   createdAt: string;
