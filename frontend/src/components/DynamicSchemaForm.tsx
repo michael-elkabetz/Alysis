@@ -63,7 +63,7 @@ export function DynamicSchemaForm({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {sortedProperties.map(([key, prop]) => (
-          <div key={key} className={cn(prop.format === 'textarea' ? 'col-span-2' : '', 'p-0.5')}>
+          <div key={key} className={cn(prop.format === 'textarea' || prop.format === 'password' ? 'col-span-2' : '', 'p-0.5')}>
             <SchemaField
               fieldKey={key}
               property={prop}
