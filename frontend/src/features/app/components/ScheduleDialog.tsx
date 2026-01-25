@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CronInput } from './CronInput';
+import { ScheduleTimeInput } from './ScheduleTimeInput';
 import {
   createSchedule,
   updateSchedule,
@@ -167,11 +167,10 @@ export function ScheduleDialog({
             </Select>
           </div>
 
-          <CronInput
+          <ScheduleTimeInput
             value={cronExpression}
             onChange={setCronExpression}
             disabled={isLoading}
-            timezone={timezone}
           />
 
           <div className="flex items-center justify-between py-2">

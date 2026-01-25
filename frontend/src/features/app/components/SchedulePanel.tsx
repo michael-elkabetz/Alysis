@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -34,58 +35,81 @@ import {
   Loader2,
 } from 'lucide-react';
 
-const CRON_LABELS: Record<string, string> = {
-  '0 * * * *': 'Every Hour',
-  '0 */6 * * *': 'Every 6 Hours',
-  '0 */12 * * *': 'Every 12 Hours',
-  '0 9 * * *': 'Every Day at 9:00',
-  '0 9 * * 1': 'Every Monday at 9:00',
-  '0 9 1 * *': 'Every 1st of Month at 9:00',
-};
+function normalizeScheduleDate(dateStr: string): string {
+  const trimmed = dateStr.trim();
+  if (!trimmed) return dateStr;
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) return trimmed;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(trimmed)) {
+    return `${trimmed.replace(' ', 'T')}Z`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    return `${trimmed}Z`;
+  }
+  return trimmed;
+}
+
+function parseScheduleDate(dateStr: string): Date {
+  return new Date(normalizeScheduleDate(dateStr));
+}
+
+function formatCronTime(hour: number, minute: number): string {
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+}
+
+function formatNextRun(dateStr: string, timezone: string): string {
+  try {
+    return formatInTimeZone(parseScheduleDate(dateStr), timezone, 'MMM d, HH:mm');
+  } catch {
+    return format(parseScheduleDate(dateStr), 'MMM d, HH:mm');
+  }
+}
+
+function formatTimesList(hours: number[], minute: number): string {
+  const times = hours.sort((a, b) => a - b).map(h => formatCronTime(h, minute));
+  return times.join(', ');
+}
 
 function getCronLabel(cronExpression: string): string {
-  if (CRON_LABELS[cronExpression]) {
-    return CRON_LABELS[cronExpression];
-  }
-  
   const parts = cronExpression.split(' ');
   if (parts.length !== 5) return cronExpression;
-  
+
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
-  
-  if (hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    if (minute === '*') return 'Every Minute';
-    if (minute.startsWith('*/')) {
-      const interval = minute.slice(2);
-      return `Every ${interval} Minutes`;
-    }
+  const min = parseInt(minute, 10) || 0;
+
+  if (hour === '*' || hour.startsWith('*/')) {
+    if (hour === '*') return 'Every hour';
+    const interval = parseInt(hour.slice(2), 10);
+    return interval === 1 ? 'Every hour' : `Every ${interval} hours`;
   }
-  
-  if (minute === '0' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-    if (hour === '*') return 'Every Hour';
-    if (hour.startsWith('*/')) {
-      const interval = hour.slice(2);
-      return `Every ${interval} Hours`;
-    }
-    if (!isNaN(Number(hour))) {
-      return `Daily at ${hour.padStart(2, '0')}:00`;
-    }
+
+  const hours = hour.split(',').map(h => parseInt(h, 10)).filter(h => !isNaN(h));
+  if (hours.length === 0) return cronExpression;
+
+  const timeStr = formatTimesList(hours, min);
+
+  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+    return `Every day at ${timeStr}`;
   }
-  
-  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*' && !isNaN(Number(hour)) && !isNaN(Number(minute))) {
-    return `Daily at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+
+  if (dayOfMonth === '*' && month === '*' && dayOfWeek !== '*') {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNums = dayOfWeek.split(',').map(Number).filter(n => !isNaN(n));
+    const dayLabels = dayNums.sort((a, b) => a - b).map(n => dayNames[n] || `Day ${n}`).join(', ');
+    return `Every ${dayLabels} at ${timeStr}`;
   }
-  
-  if (dayOfMonth === '*' && month === '*' && !isNaN(Number(dayOfWeek))) {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const day = days[Number(dayOfWeek)] || `Day ${dayOfWeek}`;
-    if (!isNaN(Number(hour)) && !isNaN(Number(minute))) {
-      return `Every ${day} at ${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    }
-    return `Every ${day}`;
+
+  if (month === '*' && dayOfWeek === '*' && !isNaN(Number(dayOfMonth))) {
+    const suffix = getOrdinalSuffix(Number(dayOfMonth));
+    return `${dayOfMonth}${suffix} of month at ${timeStr}`;
   }
-  
+
   return cronExpression;
+}
+
+function getOrdinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
 }
 
 interface SchedulePanelProps {
@@ -257,12 +281,12 @@ export function SchedulePanel({ appId, sampleData, onViewResult, onRunComplete }
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                 {schedule.nextRunAt && (
                   <span>
-                    Next: {format(new Date(schedule.nextRunAt), 'MMM d, HH:mm')}
+                    Next: {formatNextRun(schedule.nextRunAt, schedule.timezone)}
                   </span>
                 )}
                 {schedule.lastRunAt && (
                   <span>
-                    Last: {formatDistanceToNow(new Date(schedule.lastRunAt), { addSuffix: true })}
+                    Last: {formatDistanceToNow(parseScheduleDate(schedule.lastRunAt), { addSuffix: true })}
                   </span>
                 )}
               </div>
