@@ -658,6 +658,15 @@ function UsageConfigForm({
     );
   }
 
+  if (executorType === 'webhook') {
+    return (
+      <div className="text-xs text-muted-foreground">
+        <p>Results will be sent as JSON to the configured webhook URL.</p>
+        <p className="mt-1">Scheduled analysis results will automatically be sent when jobs complete.</p>
+      </div>
+    );
+  }
+
   if (executorType === 'http') {
     const method = (values.method as string) || 'GET';
     const authType = (values.authType as string) || 'none';

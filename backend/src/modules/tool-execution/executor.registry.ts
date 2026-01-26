@@ -2,12 +2,14 @@ import type { ToolExecutor, ExecutorRegistry, TestConnectionResult, ExecuteResul
 import { sqlExecutor } from './input/sql.executor'
 import { httpExecutor } from './input/http.executor'
 import { slackExecutor } from './output/slack.executor'
+import { webhookExecutor } from './output/webhook.executor'
 import type { ExecutorType } from '../../db/schema'
 
 const executors: ExecutorRegistry = {
   sql: sqlExecutor,
   http: httpExecutor,
   notification: slackExecutor,
+  webhook: webhookExecutor,
 }
 
 export const executorRegistry = {

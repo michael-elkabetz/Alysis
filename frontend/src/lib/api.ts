@@ -616,7 +616,7 @@ export async function testAppToolQuery(
 }
 
 export type ToolCategory = 'database' | 'http' | 'storage' | 'notification' | 'custom';
-export type ExecutorType = 'sql' | 'http' | 'storage' | 'notification' | 'custom';
+export type ExecutorType = 'sql' | 'http' | 'storage' | 'notification' | 'webhook' | 'custom';
 export type ToolDirection = 'input' | 'output';
 
 export interface JsonSchemaProperty {

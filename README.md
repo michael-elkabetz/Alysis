@@ -1,147 +1,241 @@
-# Alysis — Self-Hosted AI Analysis Platform
+<div align="center">
 
-Build, manage, and run AI-powered analysis apps with ease.
+# Alysis
 
-![Built with Bun](https://img.shields.io/badge/Built_with-Bun-F9F1E1?style=flat&logo=bun&logoColor=black)
-![Elysia](https://img.shields.io/badge/Framework-Elysia-6C5CE7?style=flat)
-![React](https://img.shields.io/badge/React-19-61DAFB.svg?style=flat&logo=react&logoColor=black)
-![Postgres](https://img.shields.io/badge/Postgres-16-336791?style=flat&logo=postgresql&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-Ready-412991?style=flat&logo=openai&logoColor=white)
-![Anthropic](https://img.shields.io/badge/Anthropic-Ready-D4A373?style=flat)
-![Google Gemini](https://img.shields.io/badge/Gemini-Ready-4285F4?style=flat&logo=google&logoColor=white)
+### Turn AI prompts into production APIs — in minutes, not weeks.
 
----
+[![Built with Bun](https://img.shields.io/badge/Bun-1.3+-F9F1E1?style=for-the-badge&logo=bun&logoColor=black)](https://bun.sh)
+[![Elysia](https://img.shields.io/badge/Elysia-Framework-6C5CE7?style=for-the-badge)](https://elysiajs.com)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## Overview
+**Self-hosted AI analysis platform with prompt management, tool integrations, and scheduled execution.**
 
-**Alysis** is a self-hosted platform for creating and executing AI analysis applications. It combines the best of LiteLLM and LangFuse — giving you prompt management, multi-provider AI support, and observability in one platform.
+[Getting Started](#-quick-start) · [Features](#-features) · [API Reference](#-api-reference) · [Documentation](#-documentation)
 
-Define your prompts (or generate them with AI), connect to OpenAI, Anthropic, or Google Gemini, attach tools like databases or HTTP calls, and expose secure API endpoints — all with built-in versioning, logging, and statistics.
+![Alysis Platform](alysis.gif)
 
-![Alysis Platform Details](alysis.gif)
+</div>
 
 ---
 
-## Key Features
+## 🎯 The Problem
 
-### For Product Teams: Prompt Engineering & Playground
-- **Interactive Playground** — Build and refine prompts with real-time testing
-- **Multi-Provider AI** — Test across OpenAI, Anthropic, and Google Gemini without code changes
-- **Cost & Performance Visibility** — See exactly how much each execution costs and how long it takes
-- **Version Comparison** — Compare latency and pricing across different prompt versions
-- **Publish When Ready** — Once satisfied, turn your prompt into a production API endpoint
+Product teams are getting better at prompt engineering. They know what analysis to run and what customers should see. But turning prompts into production APIs still requires:
 
-### AI App Generation
-- **Describe your app** — Paste a short description and let Alysis draft the name, prompt, and sample data
-- **Provider-aware** — Choose OpenAI, Anthropic, or Gemini and a model before generating
-- **Human-in-the-loop** — Review and edit the generated configuration before saving
+- Managing AI provider SDKs across services
+- Building infrastructure for versioning, testing, and rollbacks
+- Connecting to data sources for enriched analysis
+- Setting up observability for cost and performance tracking
 
-### For Developers: Simple Integration
-- **No AI Client Code Required** — Don't manage OpenAI/Anthropic/Gemini SDKs yourself
-- **Send Data → Get Analysis** — Your only job: pass your data to the API and receive structured analysis
-- **TypeScript Interfaces Provided** — Auto-generated type definitions from actual AI responses
-- **Production-Ready Code** — Copy cURL commands and integration snippets from Dev Space
-- **API Key Authentication** — Secure endpoints with per-app keys
-- **Complete Documentation** — Interactive Swagger docs at `/docs`
-
-### Self-Hosted & Secure
-- **Full Control** — Deploy on your infrastructure, keep your data private
-- **Vendor Key Management** — Store AI provider keys securely or use environment variables
-- **Execution Logs** — Complete audit trail of all requests and responses
-- **Docker Ready** — One command to deploy the entire stack
-
-### Tools & Data Sources
-- **Built-in connectors** — Snowflake, PostgreSQL, and HTTP tools included out of the box
-- **Reusable connections** — Create tool instances once and attach them to multiple apps
-- **Per-app usage config** — Define queries or request parameters per app
-- **Automatic input enrichment** — Tool results are injected as `_tool_<toolName>` keys during tests and executions
+**Alysis solves this.** One platform to build, test, deploy, and monitor AI-powered analysis — with tools and scheduling built in.
 
 ---
 
-## Quick Start
+## ✨ Features
 
-### Option 1: Docker (Recommended)
+<table>
+<tr>
+<td width="50%">
+
+### 🤖 AI App Generation
+
+Don't write prompts from scratch. Describe what you want, and AI generates:
+
+- ✅ The system prompt
+- ✅ Sample input data for testing
+- ✅ App name and description
+
+Just review, edit if needed, and save.
+
+</td>
+<td width="50%">
+
+### 🔌 Input & Output Tools
+
+Connect your apps to external data and destinations:
+
+**Input Tools**
+- HTTP Request — fetch data from APIs
+- Snowflake — query data warehouses
+- PostgreSQL — query databases
+
+**Output Tools**
+- Slack — send insights to channels
+- Webhook — push results to any endpoint
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### ⏱️ Scheduled Execution
+
+Run your AI apps automatically:
+
+- Cron-based scheduling
+- Timezone support
+- Execution history and logs
+- Output tools trigger on completion
+
+</td>
+<td width="50%">
+
+### 📊 Full Observability
+
+Track everything that matters:
+
+- Token usage and costs per execution
+- Latency metrics across versions
+- Complete audit trail
+- Version comparison analytics
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🚀 Quick Start
+
+### Docker (Recommended)
 
 ```bash
 docker-compose up -d
 ```
 
-The `-d` flag runs containers in detached mode (in the background), freeing up your terminal. Use `docker-compose logs -f` to view logs, and `docker-compose down` to stop the stack.
+That's it. Your stack is running:
 
-Your stack is now running:
-
-| Service      | URL                        |
-| ------------ | -------------------------- |
-| **Frontend** | http://localhost:80        |
-| **Tool Catalog** | http://localhost:80/tools |
-| **Backend**  | http://localhost:3001      |
+| Service | URL |
+|---------|-----|
+| **Frontend** | http://localhost:80 |
+| **Backend API** | http://localhost:3001 |
 | **API Docs** | http://localhost:3001/docs |
-| **Postgres** | localhost:5432             |
+| **Tool Catalog** | http://localhost:80/tools |
 
-### Option 2: Local Development
-
-**Prerequisites:** [Bun](https://bun.sh) (v1.3.5+), Node.js (v22+), PostgreSQL
+### Local Development
 
 ```bash
-# Terminal 1 — Backend
+# Backend
 cd backend && bun install && bun run dev
 
-# Terminal 2 — Frontend
+# Frontend (new terminal)
 cd frontend && npm install && npm run dev
 ```
 
 ---
 
-## Tech Stack
+## 🏗️ How It Works
 
-| Component    | Technology                                                      |
-| ------------ |-----------------------------------------------------------------|
-| **Runtime**  | Bun                                                             |
-| **Backend**  | Elysia + Swagger                                                |
-| **Frontend** | React 19 + Vite + TailwindCSS + shadcn/ui + Framer Motion       |
-| **Database** | PostgreSQL 16                                                   |
-| **ORM**      | Drizzle ORM                                                     |
-| **AI**       | OpenAI SDK, Anthropic SDK, Google GenAI SDK                     |
-| **Data**     | TanStack Query                                                  |
-| **UI/UX**    | Radix UI + Recharts + Sonner + Lucide Icons                     |
+```mermaid
+flowchart LR
+    subgraph YourApp[Your Application]
+        API[API Call]
+    end
+    
+    subgraph Alysis[Alysis Platform]
+        direction TB
+        Tools[Input Tools]
+        Engine[AI Engine]
+        Output[Output Tools]
+        Tools --> Engine
+        Engine --> Output
+    end
+    
+    subgraph Providers[AI Providers]
+        OpenAI[OpenAI]
+        Anthropic[Anthropic]
+        Gemini[Gemini]
+    end
+    
+    subgraph Destinations[Destinations]
+        Slack[Slack]
+        Webhook[Webhook]
+    end
+    
+    API --> Alysis
+    Engine --> Providers
+    Output --> Destinations
+    Alysis --> API
+```
+
+1. **Create an app** — Write a prompt or let AI generate one
+2. **Attach tools** — Connect data sources for input enrichment
+3. **Test & publish** — Validate with sample data, then go live
+4. **Call or schedule** — Execute via API or set up automated runs
+5. **Monitor** — Track costs, latency, and outputs
 
 ---
 
-## UI Features
+## 👥 Who Is This For?
 
-The frontend is built with a modern, feature-based architecture for maximum maintainability:
+### For Product Teams
 
-- **Feature-Based Organization** — Modular components organized by domain (apps, prompts, tools, execution)
-- **AI App Generator** — Turn descriptions into ready-to-edit app configs
-- **Tool Catalog** — Browse built-in tools and manage connections
-- **Per-App Tool Usage** — Attach tools and test queries/requests per app
-- **Responsive Design** — Mobile-optimized layouts with adaptive UI components
-- **Real-Time Updates** — TanStack Query for automatic data synchronization
-- **Accessible Components** — Built on Radix UI primitives for WCAG compliance
-- **Animated Transitions** — Smooth micro-interactions powered by Framer Motion
-- **Data Visualization** — Interactive charts and analytics via Recharts
-- **Toast Notifications** — Non-intrusive feedback using Sonner
-- **40+ UI Components** — Complete shadcn/ui component library included
+| Feature | Benefit |
+|---------|---------|
+| Visual Prompt Editor | Iterate on prompts without touching code |
+| AI App Generation | Go from idea to working app in seconds |
+| Version Control | Every edit creates a version; roll back anytime |
+| Test Playground | Validate prompts before publishing |
+| Cost Tracking | See exactly what each execution costs |
+
+### For Developers
+
+| Feature | Benefit |
+|---------|---------|
+| Simple API | One endpoint, JSON in, JSON out |
+| No SDK Required | Alysis handles all AI provider complexity |
+| TypeScript Interfaces | Auto-generated types from responses |
+| Tool Augmentation | Data injected as `_tool_<name>` keys |
+| Swagger Docs | Full API documentation at `/docs` |
 
 ---
 
-## API Usage
+## 🔌 Tools & Integrations
 
-### AI App Generation (Magic)
+### Input Tools
 
-Use AI to generate an initial app configuration from a short description.
+Enrich your AI analysis with external data:
 
 ```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Snowflake     │     │   PostgreSQL    │     │   HTTP API      │
+│   ❄️ Warehouse  │     │   🐘 Database   │     │   🌐 REST       │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌─────────────────────────┐
+                    │     AI Analysis App     │
+                    │   (enriched with data)  │
+                    └─────────────────────────┘
+```
+
+### Output Tools
+
+Send results where they matter:
+
+| Tool | Description |
+|------|-------------|
+| **Slack** | Post insights directly to channels via webhook |
+| **Webhook** | Push JSON results to any HTTP endpoint |
+
+---
+
+## 📡 API Reference
+
+### Generate App with AI
+
+```bash
 POST /api/v1/apps/magic
 ```
 
-**Request:**
-
 ```json
 {
-  "description": "Summarize customer support tickets into themes",
+  "description": "Analyze customer support tickets and categorize by theme",
   "vendor": "openai",
-  "model": "gpt-5.2"
+  "model": "gpt-4o"
 }
 ```
 
@@ -149,189 +243,150 @@ POST /api/v1/apps/magic
 
 ```json
 {
-  "name": "support-theme-summarizer",
-  "description": "Summarize support ticket themes",
-  "systemPrompt": "You are an expert analyst that...",
-  "sampleData": "I need help resetting my password..."
+  "name": "support-ticket-analyzer",
+  "description": "Categorizes support tickets by theme",
+  "systemPrompt": "You are an expert analyst...",
+  "sampleData": "Customer: I can't login to my account..."
 }
 ```
 
-Use the response to create an app via `POST /api/v1/apps` (edit the fields as needed before saving).
-
-### Execute App
-
-Once you've created and activated an app through the UI, use this endpoint to execute it:
-
-```
-POST /api/v1/analyze/:appId
-```
-
-**Headers:**
-| Header | Required | Description |
-|--------------------|----------|------------------------------------------|
-| `X-API-Key` | Yes | API key generated when app was created |
-| `X-Caller-Service` | No | Identifier for your calling service |
-
-**Request:**
-
-```json
-{
-  "input": {
-    "data": "your data"
-  }
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": "log_xyz",
-  "output": { "result": "..." },
-  "status": "success",
-  "latencyMs": 342,
-  "tokenUsage": { "prompt": 25, "completion": 10, "total": 35 }
-}
-```
-
-**Example:**
+### Execute Analysis
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/analyze/e-comm-G9fDp \
+curl -X POST http://localhost:3001/api/v1/analyze/my-app-id \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: aak_xxxx..." \
-  -d '{"input": {"data": "I love this product!"}}'
+  -H "X-API-Key: aak_your_key_here" \
+  -d '{"input": {"text": "Your data here"}}'
 ```
 
-### Tools & Data Sources (Core Endpoints)
-
-- `GET /api/v1/tool-definitions` — list available tools
-- `POST /api/v1/tool-instances` — create a reusable tool connection
-- `PUT /api/v1/apps/:id/tools/instance/:instanceId` — attach a tool to an app
-- `POST /api/v1/apps/:id/tools/:usageId/execute` — execute a tool for an app
-
-Attach a tool instance to an app:
+**Response:**
 
 ```json
 {
-  "enabled": true,
-  "usageConfig": { "query": "select * from orders limit 10" }
+  "id": "exec_abc123",
+  "output": { "category": "billing", "sentiment": "frustrated" },
+  "status": "success",
+  "latencyMs": 342,
+  "tokenUsage": { "prompt": 150, "completion": 45, "total": 195 }
 }
 ```
 
-Tool results are injected into app inputs as `_tool_<toolName>` keys during tests and executions.
+### Schedule an App
 
-Full API documentation available at `/docs` (Swagger UI).
+```bash
+PUT /api/v1/apps/:appId/schedule
+```
 
-### Troubleshooting
+```json
+{
+  "cronExpression": "0 9 * * *",
+  "timezone": "America/New_York",
+  "enabled": true,
+  "inputData": { "source": "daily_report" }
+}
+```
 
-**API Key Errors**
+### Key Endpoints
 
-If you receive `Invalid API key or key does not have access to this app`:
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/apps` | Create a new app |
+| `POST /api/v1/apps/magic` | Generate app with AI |
+| `POST /api/v1/analyze/:appId` | Execute an app |
+| `PUT /api/v1/apps/:appId/schedule` | Configure schedule |
+| `GET /api/v1/tool-definitions` | List available tools |
+| `POST /api/v1/tool-instances` | Create tool connection |
 
-1. **Use the correct API key** - The key is shown once when you create the app. Copy it from the UI or check the Developer Space.
-2. **Verify the key format** - API keys start with `aak_` followed by 32 characters (e.g., `aak_xyz123...`).
-3. **Check app access** - If using an app-specific key, ensure it matches the `appId` in the URL.
-4. **Global vs App keys** - Global API keys work for all apps; app-specific keys only work for their assigned app.
-
-### Dev Space
-
-The UI includes a built-in Dev Space that automatically generates ready-to-use integration code:
-
-- **cURL Commands** — Copy production-ready cURL snippets with your API key
-- **TypeScript Interfaces** — Auto-generated type definitions from AI responses
-- **Sample Data Integration** — Pre-populated requests using your saved sample data
-
-Access Dev Space by clicking the terminal icon in the analysis detail view.
+Full documentation at **`/docs`** (Swagger UI)
 
 ---
 
-## Configuration
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Runtime** | [Bun](https://bun.sh) — Fast JavaScript runtime |
+| **Backend** | [Elysia](https://elysiajs.com) — TypeScript web framework |
+| **Frontend** | React 19 + Vite + TailwindCSS + shadcn/ui |
+| **Database** | PostgreSQL 16 + [Drizzle ORM](https://orm.drizzle.team) |
+| **AI Providers** | OpenAI, Anthropic, Google Gemini |
+| **Data Fetching** | TanStack Query |
+| **UI Components** | Radix UI + Recharts + Framer Motion |
+
+---
+
+## 📁 Project Structure
+
+```
+alysis/
+├── docker-compose.yml          # Full stack orchestration
+├── backend/
+│   └── src/
+│       ├── modules/
+│       │   ├── app/            # App CRUD & management
+│       │   ├── prompt/         # Prompt versioning
+│       │   ├── execution/      # Execution logs
+│       │   ├── schedule/       # Scheduled tasks
+│       │   ├── tool-*/         # Tool system (definitions, instances, execution)
+│       │   └── api-key/        # Authentication
+│       ├── clients/            # AI provider clients
+│       └── db/                 # Drizzle schema
+└── frontend/
+    └── src/
+        ├── pages/              # Route components
+        ├── features/app/       # App feature module
+        ├── components/         # Shared components
+        └── lib/                # API client & utilities
+```
+
+---
+
+## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable            | Description                  | Default     |
-| ------------------- | ---------------------------- | ----------- |
-| `DATABASE_URL`      | PostgreSQL connection string | Required    |
-| `OPENAI_API_KEY`    | OpenAI API key               | Optional    |
-| `ANTHROPIC_API_KEY` | Anthropic API key            | Optional    |
-| `GEMINI_API_KEY`    | Google Gemini API key        | Optional    |
-| `PORT`              | Backend server port          | 3001        |
-| `NODE_ENV`          | Environment mode             | development |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `OPENAI_API_KEY` | OpenAI API key | No* |
+| `ANTHROPIC_API_KEY` | Anthropic API key | No* |
+| `GEMINI_API_KEY` | Google Gemini API key | No* |
+| `PORT` | Backend port | No (default: 3001) |
+
+*At least one AI provider key required. Can also be configured via UI.
 
 ### Supported Models
 
-**OpenAI:** `gpt-5.2`, `gpt-4o`
-
-**Anthropic:** `claude-opus-4-5-20251101`, `claude-sonnet-4-20250514`
-
-**Google Gemini:** `gemini-3-pro-preview`, `gemini-2.5-flash`
-
----
-
-## Project Structure
-
-```
-/
-├── docker-compose.yml        # Stack orchestration
-├── backend/                  # Bun + Elysia API
-│   ├── src/
-│   │   ├── clients/          # AI provider clients (OpenAI, Anthropic, Gemini)
-│   │   ├── modules/          # Feature modules (apps, prompts, tools, execution)
-│   │   │   ├── app/          # App management
-│   │   │   ├── prompt/       # Prompt versioning domain
-│   │   │   ├── execution/    # Execution logs domain
-│   │   │   ├── api-key/      # API key management
-│   │   │   ├── vendor-key/   # Vendor API key management
-│   │   │   ├── tool-definition/ # Tool catalog and schemas
-│   │   │   ├── tool-instance/   # Tool connections
-│   │   │   ├── app-tool-usage/  # Per-app tool configuration
-│   │   │   ├── tool-execution/  # Tool executors (sql/http)
-│   │   │   └── dev-tools/       # Developer tools
-│   │   ├── db/               # Drizzle schema & migrations
-│   │   ├── config/           # Configuration (model pricing, etc.)
-│   │   ├── shared/           # Shared types & interfaces
-│   │   ├── utils/            # Utilities
-│   │   └── index.ts          # App entry point
-│   └── Dockerfile
-├── frontend/                 # React 19 App
-│   ├── src/
-│   │   ├── features/         # Feature-based organization
-│   │   │   └── app/          # App feature module (AIHero, PromptEditor, ToolUsagePanel)
-│   │   │       ├── components/ # AppCard, PromptEditor, ToolUsagePanel, DevSpaceSheet, etc.
-│   │   │       └── hooks/    # useTestRunner, usePromptEditor, useInlineEdit, etc.
-│   │   ├── components/ui/    # shadcn/ui components (40+ components)
-│   │   ├── layouts/          # Layout components (BackgroundEffects)
-│   │   ├── pages/            # Route pages (AppsList, AppDetail, ToolCatalog)
-│   │   ├── hooks/            # Shared hooks (useRelativeTime, useMobile)
-│   │   └── lib/              # Utilities (api.ts, type-generators.ts)
-│   └── Dockerfile
-└── README.md
-```
+| Provider | Models |
+|----------|--------|
+| **OpenAI** | gpt-4o, gpt-4-turbo |
+| **Anthropic** | claude-3-opus, claude-3-sonnet |
+| **Google** | gemini-1.5-pro, gemini-1.5-flash |
 
 ---
 
-## Database Schema
+## 🤝 Contributing
 
-| Table              | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
-| `analyses`         | Apps with name, description, status, and sample data            |
-| `prompt_versions`  | Versioned prompts with model config and interfaces              |
-| `tool_definitions` | Tool catalog with config and usage schemas                      |
-| `tool_instances`   | Saved tool connections and configs                              |
-| `app_tool_usages`  | Per-app tool usage settings                                     |
-| `execution_logs`   | Request/response audit trail with token usage                   |
-| `api_keys`         | Per-app API keys for authentication                             |
-| `vendor_api_keys`  | Stored AI provider keys (encrypted)                             |
+Contributions welcome! Please read our contributing guidelines before submitting PRs.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-## Contributing
+## 📄 License
 
-Contributions are welcome! Fork the repo, create a feature branch, and submit a PR.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## License
+<div align="center">
 
-MIT License
+**[⬆ Back to Top](#alysis)**
+
+Built with ❤️ for teams who want AI in production, not just in notebooks.
+
+</div>

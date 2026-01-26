@@ -113,6 +113,30 @@ const BUILT_IN_TOOLS: NewToolDefinition[] = [
     },
     builtIn: true,
   },
+  {
+    id: 'td-webhook',
+    name: 'webhook',
+    displayName: 'Webhook',
+    description: 'Send scheduled analysis results to any HTTP endpoint',
+    category: 'notification',
+    executorType: 'webhook',
+    direction: 'output',
+    configSchema: {
+      type: 'object',
+      properties: {
+        webhookUrl: { type: 'string', format: 'uri', description: 'HTTP endpoint URL to receive the webhook payload' },
+        method: { type: 'string', enum: ['POST', 'PUT', 'PATCH'], description: 'HTTP method for the webhook request', default: 'POST' },
+        headers: { type: 'string', format: 'textarea', description: 'Custom headers as JSON (e.g., {"Authorization": "Bearer token"})' },
+      },
+      required: ['webhookUrl'],
+    },
+    usageSchema: {
+      type: 'object',
+      properties: {},
+      required: [],
+    },
+    builtIn: true,
+  },
 ]
 
 export interface CreateToolDefinitionDto {

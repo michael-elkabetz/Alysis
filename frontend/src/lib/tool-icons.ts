@@ -3,6 +3,7 @@ const TOOL_ICON_MAP: Record<string, string> = {
   postgres: '/pg.png',
   http: '/http.png',
   slack: '/slack.png',
+  webhook: '/webhook.svg',
 };
 
 export function getToolIconUrl(toolName: string | null | undefined): string | null {
