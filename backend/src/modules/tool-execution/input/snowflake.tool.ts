@@ -1,7 +1,7 @@
 import type { SnowflakeConfig } from '../../../shared/types'
 import * as crypto from 'crypto'
 
-export interface SnowflakeQueryResult {
+interface SnowflakeQueryResult {
   rows: Record<string, unknown>[]
   rowCount: number
 }

@@ -1015,23 +1015,5 @@ export async function getSchedules(): Promise<AppSchedule[]> {
   return fetchApi<AppSchedule[]>('/api/v1/schedules');
 }
 
-export type Analysis = App;
-export type AnalysisStatus = AppStatus;
-export type AnalysisWithApiKey = AppWithApiKey;
 export type AnalysisInterfaces = AppInterfaces;
 export type AnalysisStats = AppStats;
-export type CreateAnalysisDto = CreateAppDto;
-export type UpdateAnalysisDto = UpdateAppDto;
-export type ExecuteAnalysisResult = ExecuteAppResult;
-export type TestAnalysisPromptDto = TestAppPromptDto;
-export type TestAnalysisPromptResult = TestAppPromptResult;export const createAnalysis = createApp;
-export const getAnalyses = getApps;
-export const getAnalysis = getApp;
-export const updateAnalysis = updateApp;
-export const deleteAnalysis = deleteApp;
-export const getAnalysisStats = getAppStats;
-export const getAnalysisLogs = getAppLogs;
-export const executeAnalysis = executeApp;
-export const testAnalysisPrompt = testAppPrompt;
-export const getAnalysisApiKeys = getAppApiKeys;
-export const createAnalysisApiKey = createAppApiKey;

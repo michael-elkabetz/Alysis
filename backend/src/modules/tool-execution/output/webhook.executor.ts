@@ -6,7 +6,7 @@ export interface WebhookConfig {
   headers?: Record<string, string>
 }
 
-export interface WebhookExecutionContext {
+interface WebhookExecutionContext {
   appName: string
   output: unknown
   status: 'success' | 'error'

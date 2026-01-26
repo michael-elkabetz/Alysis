@@ -15,5 +15,5 @@ export type {
   TestQueryResult,
 } from './executor.interface'
 
-export type { SlackConfig, SlackExecutionContext } from './output/slack.executor'
-export type { WebhookConfig, WebhookExecutionContext } from './output/webhook.executor'
+export type { SlackConfig } from './output/slack.executor'
+export type { WebhookConfig } from './output/webhook.executor'

@@ -1,13 +1,13 @@
 import type { AnalysisInterfaces } from './api';
 
-export function toPascalCase(name: string): string {
+function toPascalCase(name: string): string {
   return name
     .split(/[\s-_]+/)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join('');
 }
 
-export function generateTypeFromValue(value: unknown, indent = 2): string {
+function generateTypeFromValue(value: unknown, indent = 2): string {
   const spaces = ' '.repeat(indent);
   
   if (value === null) return 'null';

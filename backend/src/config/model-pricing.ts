@@ -3,7 +3,7 @@ export interface ModelPricing {
   outputPricePerMillion: number
 }
 
-export const MODEL_PRICING: Record<string, ModelPricing> = {
+const MODEL_PRICING: Record<string, ModelPricing> = {
   'gpt-5.2': { inputPricePerMillion: 2.50, outputPricePerMillion: 10.00 },
   'gpt-4o': { inputPricePerMillion: 2.50, outputPricePerMillion: 10.00 },
   'claude-opus-4-5-20251101': { inputPricePerMillion: 5.00, outputPricePerMillion: 25.00 },

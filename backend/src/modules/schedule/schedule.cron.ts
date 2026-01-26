@@ -159,18 +159,3 @@ export function startScheduleProcessor(): void {
     'UTC',
   )
 }
-
-export function stopScheduleProcessor(): void {
-  if (cronJob) {
-    cronJob.stop()
-    cronJob = null
-  }
-}
-
-export function getProcessorStatus(): { activeJobs: number; maxConcurrent: number; isRunning: boolean } {
-  return {
-    activeJobs,
-    maxConcurrent: MAX_CONCURRENT_JOBS,
-    isRunning: cronJob !== null,
-  }
-}

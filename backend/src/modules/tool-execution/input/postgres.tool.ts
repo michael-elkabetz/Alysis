@@ -1,7 +1,7 @@
 import type { PostgresConfig } from '../../../shared/types'
 import postgres from 'postgres'
 
-export interface PostgresQueryResult {
+interface PostgresQueryResult {
   rows: Record<string, unknown>[]
   rowCount: number
 }

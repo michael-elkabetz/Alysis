@@ -4,7 +4,7 @@ export interface SlackConfig {
   webhookUrl: string
 }
 
-export interface SlackExecutionContext {
+interface SlackExecutionContext {
   appName: string
   output: unknown
   status: 'success' | 'error'
