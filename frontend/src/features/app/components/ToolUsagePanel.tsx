@@ -54,15 +54,15 @@ const DIRECTION_CONFIG: Record<ToolDirection, { label: string; description: stri
     label: 'Input Tools',
     description: 'Fetch data from external sources',
     icon: ArrowDownToLine,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: 'text-violet-500',
+    bgColor: 'bg-violet-500/10',
   },
   output: {
     label: 'Output Tools',
     description: 'Send results & notifications',
     icon: ArrowUpFromLine,
-    color: 'text-pink-500',
-    bgColor: 'bg-pink-500/10',
+    color: 'text-fuchsia-500',
+    bgColor: 'bg-fuchsia-500/10',
   },
 };
 

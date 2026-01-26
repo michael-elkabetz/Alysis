@@ -113,14 +113,14 @@ export function DevSpaceSheet({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-amber-700" />
+                <Code2 className="w-4 h-4 text-primary" />
                 API Endpoint
               </h3>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => copyToClipboard(endpointUrl, 'Endpoint')}
-                className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                className="shrink-0 h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
               >
                 <Copy className="w-3.5 h-3.5" />
               </Button>
@@ -137,7 +137,7 @@ export function DevSpaceSheet({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Key className="w-4 h-4 text-amber-700" />
+                <Key className="w-4 h-4 text-primary" />
                 Authentication
               </h3>
               {apiKey && (
@@ -145,7 +145,7 @@ export function DevSpaceSheet({
                   variant="ghost"
                   size="icon"
                   onClick={() => copyToClipboard(`X-API-Key: ${apiKey}`, 'API Key header')}
-                  className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                  className="shrink-0 h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
                 >
                   <Copy className="w-3.5 h-3.5" />
                 </Button>
@@ -163,14 +163,14 @@ export function DevSpaceSheet({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-amber-700" />
+                <Terminal className="w-4 h-4 text-primary" />
                 cURL
               </h3>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => copyToClipboard(generateCurl(), 'cURL command')}
-                className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                className="shrink-0 h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
               >
                 <Copy className="w-3.5 h-3.5" />
               </Button>
@@ -187,7 +187,7 @@ export function DevSpaceSheet({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Braces className="w-4 h-4 text-amber-700" />
+                <Braces className="w-4 h-4 text-primary" />
                 Response Interface
               </h3>
               {!isLoading && interfaceCode && (
@@ -195,7 +195,7 @@ export function DevSpaceSheet({
                   variant="ghost"
                   size="icon"
                   onClick={() => copyToClipboard(interfaceCode, 'Interface')}
-                  className="shrink-0 h-7 w-7 text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                  className="shrink-0 h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
                 >
                   <Copy className="w-3.5 h-3.5" />
                 </Button>

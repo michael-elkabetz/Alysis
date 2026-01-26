@@ -83,6 +83,18 @@ if (process.env.DATABASE_URL) {
       await client`ALTER TYPE executor_type ADD VALUE 'notification'`
     }
 
+    // Add webhook to executor_type enum if not exists
+    const executorWebhookExists = await client`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumtypid = 'executor_type'::regtype 
+        AND enumlabel = 'webhook'
+      )
+    `
+    if (!executorWebhookExists[0]?.exists) {
+      await client`ALTER TYPE executor_type ADD VALUE 'webhook'`
+    }
+
     // Add direction column to tool_definitions if not exists
     const directionColumnExists = await client`
       SELECT EXISTS (

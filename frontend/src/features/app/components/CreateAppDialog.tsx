@@ -323,7 +323,7 @@ export function CreateAppDialog({
                   {copiedEndpoint ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
-              <code className="block px-3 py-2.5 bg-[#f5f0e8] rounded-xl font-mono text-sm text-foreground truncate">
+              <code className="block px-3 py-2.5 bg-[#f5f0f8] rounded-xl font-mono text-sm text-foreground truncate">
                 {getEndpointUrl()}
               </code>
             </div>
@@ -335,7 +335,7 @@ export function CreateAppDialog({
                   {copied ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              <code className="block px-3 py-2.5 bg-[#f5f0e8] rounded-xl font-mono text-sm text-foreground break-all">
+              <code className="block px-3 py-2.5 bg-[#f5f0f8] rounded-xl font-mono text-sm text-foreground break-all">
                 {savedApp.apiKey.key}
               </code>
             </div>
@@ -347,7 +347,7 @@ export function CreateAppDialog({
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
-              <pre className="px-3 py-2.5 bg-[#f5f0e8] rounded-xl text-xs font-mono text-muted-foreground overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all max-h-[40vh]">
+              <pre className="px-3 py-2.5 bg-[#f5f0f8] rounded-xl text-xs font-mono text-muted-foreground overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all max-h-[40vh]">
 {generateCurl()}
               </pre>
             </div>
@@ -432,7 +432,7 @@ export function CreateAppDialog({
                   <Label htmlFor="name" className="text-sm">Name</Label>
                   <Input
                     id="name"
-                    className="input-modern !bg-[#f5f0e8]"
+                    className="input-modern !bg-[#f5f0f8]"
                     placeholder="e.g., sentiment-analyzer"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -443,7 +443,7 @@ export function CreateAppDialog({
                   <Label htmlFor="description" className="text-sm">Description</Label>
                   <Input
                     id="description"
-                    className="input-modern !bg-[#f5f0e8]"
+                    className="input-modern !bg-[#f5f0f8]"
                     placeholder="What does this app do?"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -458,7 +458,7 @@ export function CreateAppDialog({
                       onValueChange={(v) => setFormData({ ...formData, vendor: v })}
                       disabled={!hasConfiguredVendor}
                     >
-                      <SelectTrigger className="input-modern !bg-[#f5f0e8]">
+                      <SelectTrigger className="input-modern !bg-[#f5f0f8]">
                         <SelectValue placeholder={hasConfiguredVendor ? "Select provider" : "No vendor configured"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -477,7 +477,7 @@ export function CreateAppDialog({
                       onValueChange={(v) => setFormData({ ...formData, model: v })}
                       disabled={!hasConfiguredVendor || !formData.vendor}
                     >
-                      <SelectTrigger className="input-modern !bg-[#f5f0e8]">
+                      <SelectTrigger className="input-modern !bg-[#f5f0f8]">
                         <SelectValue placeholder={hasConfiguredVendor ? "Select model" : "No model available"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -506,7 +506,7 @@ export function CreateAppDialog({
               <Label htmlFor="systemPrompt" className="text-sm">Analysis Instructions</Label>
               <Textarea
                 id="systemPrompt"
-                className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0e8] !border-0"
+                className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0f8] !border-0"
                 placeholder="You are an AI assistant that analyzes data..."
                 value={formData.systemPrompt}
                 onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
@@ -519,7 +519,7 @@ export function CreateAppDialog({
               <Label htmlFor="sampleData" className="text-sm mb-2">Input</Label>
               <Textarea
                 id="sampleData"
-                className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0e8] !border-0"
+                className="input-modern flex-1 resize-none font-mono text-sm !bg-[#f5f0f8] !border-0"
                 placeholder="Paste or type your sample data..."
                 value={sampleData}
                 onChange={(e) => setSampleData(e.target.value)}

@@ -41,8 +41,8 @@ CREATE TYPE "public"."execution_status" AS ENUM('success', 'error');
 CREATE TYPE "public"."provider" AS ENUM('openai', 'anthropic', 'gemini');
 CREATE TYPE "public"."response_format" AS ENUM('json', 'text');
 CREATE TYPE "public"."tool_type" AS ENUM('snowflake', 'postgres');
-CREATE TYPE "public"."tool_category" AS ENUM('database', 'http', 'storage', 'custom');
-CREATE TYPE "public"."executor_type" AS ENUM('sql', 'http', 'storage', 'custom');
+CREATE TYPE "public"."tool_category" AS ENUM('database', 'http', 'storage', 'notification', 'custom');
+CREATE TYPE "public"."executor_type" AS ENUM('sql', 'http', 'storage', 'notification', 'webhook', 'custom');
 CREATE TYPE "public"."scheduled_run_status" AS ENUM('pending', 'running', 'completed', 'failed', 'skipped');
 
 -- Analyses Table

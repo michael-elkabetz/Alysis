@@ -26,9 +26,19 @@ function formatWebhookPayload(context: WebhookExecutionContext): Record<string, 
   }
 }
 
+function normalizeUrl(url: string): string {
+  const trimmed = url.trim()
+  // Add https:// if no protocol is present
+  if (!trimmed.match(/^https?:\/\//i)) {
+    return `https://${trimmed}`
+  }
+  return trimmed
+}
+
 function isValidUrl(url: string): boolean {
   try {
-    const parsed = new URL(url)
+    const normalized = normalizeUrl(url)
+    const parsed = new URL(normalized)
     return parsed.protocol === 'http:' || parsed.protocol === 'https:'
   } catch {
     return false
@@ -82,7 +92,7 @@ export class WebhookExecutor implements ToolExecutor {
         ...webhookConfig.headers,
       }
 
-      const response = await fetch(webhookConfig.webhookUrl, {
+      const response = await fetch(normalizeUrl(webhookConfig.webhookUrl), {
         method: webhookConfig.method || 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -134,7 +144,7 @@ export class WebhookExecutor implements ToolExecutor {
         ...config.headers,
       }
 
-      const response = await fetch(config.webhookUrl, {
+      const response = await fetch(normalizeUrl(config.webhookUrl), {
         method: config.method || 'POST',
         headers,
         body: JSON.stringify(payload),

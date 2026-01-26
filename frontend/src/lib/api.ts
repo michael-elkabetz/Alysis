@@ -867,9 +867,7 @@ export async function deleteAppToolUsage(appId: string, usageId: string): Promis
   await fetchApi<{ success: boolean }>(`/api/v1/apps/${appId}/tools/${usageId}`, {
     method: 'DELETE',
   });
-}
-
-export async function toggleAppToolUsage(
+}export async function toggleAppToolUsage(
   appId: string,
   usageId: string,
   enabled: boolean
