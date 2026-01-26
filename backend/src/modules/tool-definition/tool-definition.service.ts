@@ -2,6 +2,9 @@ import { nanoid } from 'nanoid'
 import { toolDefinitionRepository } from './tool-definition.repository'
 import type { ToolDefinitionRow, NewToolDefinition, ToolCategory, ExecutorType, ToolDirection, JsonSchema } from '../../db/schema'
 
+const VALID_CATEGORIES = ['database', 'http', 'storage', 'notification', 'custom'] as const
+const VALID_EXECUTOR_TYPES = ['sql', 'http', 'storage', 'notification', 'webhook', 'custom'] as const
+
 const BUILT_IN_TOOLS: NewToolDefinition[] = [
   {
     id: 'td-snowflake',
@@ -190,6 +193,18 @@ function toResponse(definition: ToolDefinitionRow): ToolDefinitionResponse {
 }
 
 export const toolDefinitionService = {
+  isValidCategory(category: string): category is ToolCategory {
+    return VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])
+  },
+
+  isValidExecutorType(executorType: string): executorType is ExecutorType {
+    return VALID_EXECUTOR_TYPES.includes(executorType as typeof VALID_EXECUTOR_TYPES[number])
+  },
+
+  getValidCategories(): readonly string[] {
+    return VALID_CATEGORIES
+  },
+
   async getAll(): Promise<ToolDefinitionResponse[]> {
     const definitions = await toolDefinitionRepository.findAll()
     return definitions.map(toResponse)

@@ -1,12 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { toolConfigService } from './tool-config.service'
-import type { ToolType, SnowflakeConfig, PostgresConfig } from '../../shared/types'
-
-const validToolTypes = ['snowflake', 'postgres'] as const
-
-function isValidToolType(toolType: string): toolType is ToolType {
-  return validToolTypes.includes(toolType as typeof validToolTypes[number])
-}
+import type { SnowflakeConfig, PostgresConfig } from '../../shared/types'
 
 export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' })
   .get('/', async () => {
@@ -18,7 +12,7 @@ export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' 
   .get('/:toolType', async ({ params, set }) => {
     const toolType = params.toolType
 
-    if (!isValidToolType(toolType)) {
+    if (!toolConfigService.isValidToolType(toolType)) {
       set.status = 400
       return { error: `Invalid tool type: ${toolType}` }
     }
@@ -33,14 +27,13 @@ export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' 
   .put('/:toolType', async ({ params, body, set }) => {
     const toolType = params.toolType
 
-    if (!isValidToolType(toolType)) {
+    if (!toolConfigService.isValidToolType(toolType)) {
       set.status = 400
       return { error: `Invalid tool type: ${toolType}` }
     }
 
     try {
-      const result = await toolConfigService.upsertConfig(toolType, body as SnowflakeConfig | PostgresConfig)
-      return result
+      return await toolConfigService.upsertConfig(toolType, body as SnowflakeConfig | PostgresConfig)
     } catch (error) {
       set.status = 400
       return { error: error instanceof Error ? error.message : 'Failed to save tool config' }
@@ -73,7 +66,7 @@ export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' 
   .delete('/:toolType', async ({ params, set }) => {
     const toolType = params.toolType
 
-    if (!isValidToolType(toolType)) {
+    if (!toolConfigService.isValidToolType(toolType)) {
       set.status = 400
       return { error: `Invalid tool type: ${toolType}` }
     }
@@ -88,7 +81,7 @@ export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' 
   .post('/:toolType/test', async ({ params, set }) => {
     const toolType = params.toolType
 
-    if (!isValidToolType(toolType)) {
+    if (!toolConfigService.isValidToolType(toolType)) {
       set.status = 400
       return { error: `Invalid tool type: ${toolType}` }
     }
@@ -102,7 +95,7 @@ export const toolConfigController = new Elysia({ prefix: '/api/v1/tool-configs' 
   .post('/:toolType/test-query', async ({ params, body, set }) => {
     const toolType = params.toolType
 
-    if (!isValidToolType(toolType)) {
+    if (!toolConfigService.isValidToolType(toolType)) {
       set.status = 400
       return { error: `Invalid tool type: ${toolType}` }
     }

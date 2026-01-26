@@ -1,8 +1,9 @@
 import { nanoid } from 'nanoid'
 import { toolConfigRepository } from './tool-config.repository'
-import { snowflakeTool } from '../tool-execution/input/snowflake.tool'
-import { postgresTool } from '../tool-execution/input/postgres.tool'
+import { snowflakeTool, postgresTool } from '../tool-execution'
 import type { ToolType, SnowflakeConfig, PostgresConfig, ToolConfigStatus, SnowflakeMaskedConfig, PostgresMaskedConfig } from '../../shared/types'
+
+const VALID_TOOL_TYPES = ['snowflake', 'postgres'] as const
 
 function maskSnowflakeConfig(config: SnowflakeConfig): SnowflakeMaskedConfig {
   return {
@@ -25,6 +26,10 @@ function maskPostgresConfig(config: PostgresConfig): PostgresMaskedConfig {
 }
 
 export const toolConfigService = {
+  isValidToolType(toolType: string): toolType is ToolType {
+    return VALID_TOOL_TYPES.includes(toolType as typeof VALID_TOOL_TYPES[number])
+  },
+
   async getStatuses(): Promise<ToolConfigStatus[]> {
     const toolTypes: ToolType[] = ['snowflake', 'postgres']
     const configs = await toolConfigRepository.findAll()

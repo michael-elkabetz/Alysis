@@ -232,7 +232,7 @@ export function ScheduleTimeInput({ value, onChange, disabled }: ScheduleTimeInp
             {config.times.map((time, index) => {
               const [hour, minute] = time.split(':');
               return (
-                <div key={index} className="flex items-center gap-2">
+                <div key={`time-${index}-${time}`} className="flex items-center gap-2">
                   <Select
                     value={hour}
                     onValueChange={(h) => updateTime(index, `${h}:${minute}`)}

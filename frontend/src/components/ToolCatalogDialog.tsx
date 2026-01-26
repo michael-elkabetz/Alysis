@@ -150,12 +150,9 @@ export function ToolCatalogDialog({
   const filteredDefinitions = definitions.filter((def) => {
       if (DATABASE_TOOLS.includes(def.name) || def.category === 'database') return false;
 
-      const matchesSearch =
-        searchQuery === '' ||
+      return searchQuery === '' ||
         def.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         def.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesSearch;
     });
 
   const databaseInstances = instances.filter((inst) => {
@@ -172,12 +169,15 @@ export function ToolCatalogDialog({
     if (!acc[direction]) {
       acc[direction] = {};
     }
-    if (!acc[direction][def.category]) {
-      acc[direction][def.category] = [];
+    const directionRecord = acc[direction];
+    if (directionRecord) {
+      if (!directionRecord[def.category]) {
+        directionRecord[def.category] = [];
+      }
+      directionRecord[def.category]!.push(def);
     }
-    acc[direction][def.category].push(def);
     return acc;
-  }, {} as Record<ToolDirection, Record<ToolCategory, ToolDefinition[]>>);
+  }, {} as Partial<Record<ToolDirection, Partial<Record<ToolCategory, ToolDefinition[]>>>>);
 
 
   const isHttpTool = selectedDefinition?.name === 'http';

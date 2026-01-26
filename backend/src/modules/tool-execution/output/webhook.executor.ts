@@ -28,7 +28,6 @@ function formatWebhookPayload(context: WebhookExecutionContext): Record<string, 
 
 function normalizeUrl(url: string): string {
   const trimmed = url.trim()
-  // Add https:// if no protocol is present
   if (!trimmed.match(/^https?:\/\//i)) {
     return `https://${trimmed}`
   }

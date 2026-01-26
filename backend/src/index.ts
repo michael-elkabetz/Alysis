@@ -15,10 +15,9 @@ import { apiKeyController } from './modules/api-key/api-key.controller'
 import { apiKeyService } from './modules/api-key/api-key.service'
 import { vendorKeyController } from './modules/vendor-key/vendor-key.controller'
 import { toolConfigController } from './modules/tool-config/tool-config.controller'
-import { toolDefinitionController } from './modules/tool-definition/tool-definition.controller'
-import { toolDefinitionService } from './modules/tool-definition/tool-definition.service'
-import { toolInstanceController } from './modules/tool-instance/tool-instance.controller'
-import { appToolUsageController } from './modules/app-tool-usage/app-tool-usage.controller'
+import { toolDefinitionController, toolDefinitionService } from './modules/tool-definition'
+import { toolInstanceController } from './modules/tool-instance'
+import { appToolUsageController } from './modules/app-tool-usage'
 import { devToolsController } from './modules/dev-tools/dev-tools.controller'
 import { clientController } from './clients/client.controller'
 import { scheduleController, startScheduleProcessor } from './modules/schedule'
@@ -45,7 +44,6 @@ if (process.env.DATABASE_URL) {
       await client.unsafe(initSql)
     }
 
-    // Ensure tool_direction enum and direction column exist
     const directionEnumExists = await client`
       SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tool_direction')
     `
@@ -59,7 +57,6 @@ if (process.env.DATABASE_URL) {
       `
     }
 
-    // Add notification to tool_category enum if not exists
     const categoryNotificationExists = await client`
       SELECT EXISTS (
         SELECT 1 FROM pg_enum 
@@ -71,7 +68,6 @@ if (process.env.DATABASE_URL) {
       await client`ALTER TYPE tool_category ADD VALUE 'notification'`
     }
 
-    // Add notification to executor_type enum if not exists
     const executorNotificationExists = await client`
       SELECT EXISTS (
         SELECT 1 FROM pg_enum 
@@ -83,7 +79,6 @@ if (process.env.DATABASE_URL) {
       await client`ALTER TYPE executor_type ADD VALUE 'notification'`
     }
 
-    // Add webhook to executor_type enum if not exists
     const executorWebhookExists = await client`
       SELECT EXISTS (
         SELECT 1 FROM pg_enum 
@@ -95,7 +90,6 @@ if (process.env.DATABASE_URL) {
       await client`ALTER TYPE executor_type ADD VALUE 'webhook'`
     }
 
-    // Add direction column to tool_definitions if not exists
     const directionColumnExists = await client`
       SELECT EXISTS (
         SELECT FROM information_schema.columns 
@@ -112,7 +106,6 @@ if (process.env.DATABASE_URL) {
     
     await client.end()
   } catch {
-    // Database initialization failed - server will continue but DB operations may fail
   }
 }
 

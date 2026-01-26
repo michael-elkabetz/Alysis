@@ -2,10 +2,9 @@ import { getClient } from '../../clients'
 
 export const devToolsService = {
   async generateTyphoeusInterface(
-    analysisName: string,
+    _analysisName: string,
     jsonOutput: Record<string, unknown>
   ): Promise<string> {
-    void analysisName
     const client = getClient('openai')
     
     const prompt = `

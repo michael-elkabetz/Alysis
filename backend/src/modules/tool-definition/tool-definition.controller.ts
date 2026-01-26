@@ -2,13 +2,6 @@ import { Elysia, t } from 'elysia'
 import { toolDefinitionService } from './tool-definition.service'
 import type { ToolCategory, ExecutorType } from '../../db/schema'
 
-const validCategories = ['database', 'http', 'storage', 'custom'] as const
-const validExecutorTypes = ['sql', 'http', 'storage', 'custom'] as const
-
-function isValidCategory(category: string): category is ToolCategory {
-  return validCategories.includes(category as typeof validCategories[number])
-}
-
 const JsonSchemaValidator = t.Object({
   type: t.Literal('object'),
   properties: t.Record(t.String(), t.Object({
@@ -50,9 +43,9 @@ export const toolDefinitionController = new Elysia({ prefix: '/api/v1/tool-defin
   .get('/category/:category', async ({ params, set }) => {
     const { category } = params
 
-    if (!isValidCategory(category)) {
+    if (!toolDefinitionService.isValidCategory(category)) {
       set.status = 400
-      return { error: `Invalid category: ${category}. Valid categories: ${validCategories.join(', ')}` }
+      return { error: `Invalid category: ${category}. Valid categories: ${toolDefinitionService.getValidCategories().join(', ')}` }
     }
 
     return toolDefinitionService.getByCategory(category)
@@ -77,12 +70,12 @@ export const toolDefinitionController = new Elysia({ prefix: '/api/v1/tool-defin
 
   .post('/', async ({ body, set }) => {
     try {
-      if (!isValidCategory(body.category)) {
+      if (!toolDefinitionService.isValidCategory(body.category)) {
         set.status = 400
         return { error: `Invalid category: ${body.category}` }
       }
 
-      if (!validExecutorTypes.includes(body.executorType as typeof validExecutorTypes[number])) {
+      if (!toolDefinitionService.isValidExecutorType(body.executorType)) {
         set.status = 400
         return { error: `Invalid executor type: ${body.executorType}` }
       }
@@ -118,14 +111,12 @@ export const toolDefinitionController = new Elysia({ prefix: '/api/v1/tool-defin
 
   .put('/:id', async ({ params, body, set }) => {
     try {
-      const updated = await toolDefinitionService.update(params.id, {
+      return await toolDefinitionService.update(params.id, {
         displayName: body.displayName,
         description: body.description,
         configSchema: body.configSchema,
         usageSchema: body.usageSchema,
       })
-
-      return updated
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update tool definition'
       if (message.includes('not found')) {

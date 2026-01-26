@@ -87,7 +87,7 @@ export function DevSpaceSheet({
     };
 
     fetchFromLogs();
-  }, [isOpen, latestTestResult, appId, appName, hasFetched, interfaces]);
+  }, [isOpen, latestTestResult, appId, appName, interfaces, hasFetched]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
