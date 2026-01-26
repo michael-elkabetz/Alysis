@@ -14,7 +14,9 @@
 
 [Getting Started](#-quick-start) · [Features](#-features) · [API Reference](#-api-reference) · [Documentation](#-documentation)
 
-![Alysis Platform](alysis.gif)
+![Alysis Platform - App List](/app1.png)
+
+![Alysis Platform - App Detail](/app2.png)
 
 </div>
 

@@ -34,6 +34,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
-# Run migrations then start server
-# Pipe 'n' to select "No, add constraint without truncating" then pipe Enter to confirm
-CMD ["sh", "-c", "echo '' | bunx drizzle-kit push --force 2>/dev/null || true; bun run src/index.ts"]
+# Start server directly - app handles schema initialization at runtime
+# Run drizzle push manually before deployment if schema changes are needed
+CMD ["bun", "run", "src/index.ts"]

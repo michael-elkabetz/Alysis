@@ -103,6 +103,41 @@ if (process.env.DATABASE_URL) {
         ADD COLUMN direction tool_direction NOT NULL DEFAULT 'input'
       `
     }
+
+    // Add unique constraint on tool_definitions.name if it doesn't exist
+    const nameConstraintExists = await client`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'tool_definitions_name_unique'
+      )
+    `
+    if (!nameConstraintExists[0]?.exists) {
+      // First, deduplicate any existing duplicate names by appending suffix
+      const duplicates = await client`
+        SELECT name, COUNT(*) as count 
+        FROM tool_definitions 
+        GROUP BY name 
+        HAVING COUNT(*) > 1
+      `
+      for (const dup of duplicates) {
+        const rows = await client`
+          SELECT id FROM tool_definitions WHERE name = ${dup.name} ORDER BY created_at
+        `
+        // Keep the first one, rename the rest
+        for (let i = 1; i < rows.length; i++) {
+          await client`
+            UPDATE tool_definitions 
+            SET name = ${dup.name + '_' + i} 
+            WHERE id = ${rows[i].id}
+          `
+        }
+      }
+      // Now add the unique constraint
+      await client`
+        ALTER TABLE tool_definitions 
+        ADD CONSTRAINT tool_definitions_name_unique UNIQUE (name)
+      `
+    }
     
     await client.end()
   } catch {
