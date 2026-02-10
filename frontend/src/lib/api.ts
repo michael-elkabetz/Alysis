@@ -130,6 +130,7 @@ export interface PromptVersion {
   analysisId: string;
   version: number;
   systemPrompt: string;
+  sampleData: string | null;
   interfaces: AppInterfaces | null;
   vendor: Vendor;
   model: string;
@@ -324,6 +325,7 @@ export async function getAppLogs(
 
 export interface CreatePromptVersionDto {
   systemPrompt: string;
+  sampleData?: string;
   vendor?: Vendor;
   model?: string;
   temperature?: number;

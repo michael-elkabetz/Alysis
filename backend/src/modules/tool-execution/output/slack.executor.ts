@@ -7,25 +7,42 @@ export interface SlackConfig {
 interface SlackExecutionContext {
   appName: string
   output: unknown
+  rawResponse?: string | null
   status: 'success' | 'error'
   latencyMs: number
   errorMessage?: string
 }
 
-function formatSlackMessage(context: SlackExecutionContext): Record<string, unknown> {
+/**
+ * Builds the Slack webhook body.
+ * The model's raw response is sent as-is when it's valid JSON.
+ * Returns a string ready to use as the fetch body — no further encoding needed.
+ */
+function buildSlackBody(context: SlackExecutionContext): string {
   if (context.status === 'error' && context.errorMessage) {
-    return { text: `Error: ${context.errorMessage}` }
+    return JSON.stringify({ text: `Error: ${context.errorMessage}` })
+  }
+
+  // The model's raw response goes directly as the body — as-is
+  if (context.rawResponse) {
+    const trimmed = context.rawResponse.trim()
+    // If it's valid JSON, send it straight to Slack
+    try {
+      JSON.parse(trimmed)
+      return trimmed
+    } catch {
+      // Not JSON — wrap as plain text
+      return JSON.stringify({ text: trimmed })
+    }
   }
 
   if (context.output) {
-    const outputStr = typeof context.output === 'string'
-      ? context.output
-      : JSON.stringify(context.output, null, 2)
-
-    return { text: outputStr }
+    return JSON.stringify(
+      typeof context.output === 'string' ? { text: context.output } : context.output
+    )
   }
 
-  return { text: 'Analysis completed with no output' }
+  return JSON.stringify({ text: 'Analysis completed with no output' })
 }
 
 export class SlackExecutor implements ToolExecutor {
@@ -116,14 +133,14 @@ export class SlackExecutor implements ToolExecutor {
     const startTime = Date.now()
 
     try {
-      const message = formatSlackMessage(context)
+      const body = buildSlackBody(context)
 
       const response = await fetch(config.webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(message),
+        body,
       })
 
       const latencyMs = Date.now() - startTime

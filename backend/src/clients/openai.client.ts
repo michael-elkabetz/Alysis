@@ -34,18 +34,12 @@ export class OpenAIClient implements AIClient {
     const client = await this.getClient()
 
     try {
-      const isJsonMode = config.responseFormat === 'json'
-      const finalSystemPrompt = isJsonMode && !systemPrompt.toLowerCase().includes('json')
-        ? `${systemPrompt}\n\nYou must respond with valid JSON.`
-        : systemPrompt
-
       const response = await client.chat.completions.create({
         model: config.model,
         temperature: config.temperature,
         max_completion_tokens: config.maxTokens,
-        response_format: isJsonMode ? { type: 'json_object' } : { type: 'text' },
         messages: [
-          { role: 'system', content: finalSystemPrompt },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: userInput },
         ],
       })

@@ -133,6 +133,7 @@ export const promptVersions = pgTable('prompt_versions', {
   analysisId: text('analysis_id').notNull().references(() => analyses.id, { onDelete: 'cascade' }),
   version: integer('version').notNull(),
   systemPrompt: text('system_prompt').notNull(),
+  sampleData: text('sample_data'),
   interfaces: jsonb('interfaces'),
   provider: providerEnum('provider').notNull().default('openai'),
   model: text('model').notNull().default('gpt-5.2'),

@@ -18,6 +18,7 @@ export const promptService = {
       analysisId,
       version: nextVersion,
       systemPrompt: dto.systemPrompt,
+      sampleData: dto.sampleData ?? null,
       interfaces,
       vendor: vendor || 'openai',
       model: dto.model || 'gpt-5.2',

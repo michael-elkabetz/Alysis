@@ -34,20 +34,13 @@ export class GeminiClient implements AIClient {
     const client = await this.getClient()
 
     try {
-      const isJsonMode = config.responseFormat === 'json'
-      let finalSystemPrompt = systemPrompt
-      if (isJsonMode && !systemPrompt.toLowerCase().includes('json')) {
-        finalSystemPrompt += '\n\nYou must respond with valid JSON only. No additional text or explanation.'
-      }
-
       const response = await client.models.generateContent({
         model: config.model,
         contents: userInput,
         config: {
-          systemInstruction: finalSystemPrompt,
+          systemInstruction: systemPrompt,
           temperature: config.temperature,
           maxOutputTokens: config.maxTokens,
-          responseMimeType: isJsonMode ? 'application/json' : 'text/plain',
         },
       })
 

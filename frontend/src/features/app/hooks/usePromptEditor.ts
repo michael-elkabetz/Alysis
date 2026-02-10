@@ -112,9 +112,9 @@ export function usePromptEditor({
 
   const hasSampleDataChanged = useCallback((): boolean => {
     const currentSampleData = (sampleData || '').trim();
-    const originalSampleData = (app?.sampleData || '').trim();
+    const originalSampleData = (latestVersion?.sampleData ?? app?.sampleData ?? '').trim();
     return currentSampleData !== originalSampleData;
-  }, [sampleData, app?.sampleData]);
+  }, [sampleData, latestVersion?.sampleData, app?.sampleData]);
 
   const hasChanges = useCallback((): boolean => {
     if (!latestVersion) return true;
@@ -146,13 +146,14 @@ export function usePromptEditor({
         
         const newVersion = await createPromptVersion(appId, {
           systemPrompt: promptState.systemPrompt,
+          sampleData: sampleData ?? '',
           vendor: promptState.vendor as Vendor,
           model: promptState.model,
         });
         await publishPromptVersion(appId, newVersion.id);
         
-        if (hasSampleDataChanged() && sampleData) {
-          await updateApp(appId, { sampleData });
+        if (hasSampleDataChanged()) {
+          await updateApp(appId, { sampleData: sampleData ?? '' });
         }
         
         queryClient.invalidateQueries({ queryKey: ['app', appId] });

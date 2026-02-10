@@ -38,6 +38,7 @@ export const appService = {
       analysisId: id,
       version: 1,
       systemPrompt: dto.systemPrompt,
+      sampleData: dto.sampleData || null,
       interfaces,
       vendor: dto.vendor || inferVendor(dto.model),
       model: dto.model || DEFAULTS.MODEL,

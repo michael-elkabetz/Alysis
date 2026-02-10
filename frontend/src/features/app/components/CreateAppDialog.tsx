@@ -577,7 +577,7 @@ export function CreateAppDialog({
               <>
                 <Button
                   onClick={handleTest}
-                  disabled={isTesting || !sampleData}
+                  disabled={isTesting}
                   className="btn-secondary"
                 >
                   {isTesting ? (

@@ -65,6 +65,7 @@ CREATE TABLE "prompt_versions" (
 	"analysis_id" text NOT NULL,
 	"version" integer NOT NULL,
 	"system_prompt" text NOT NULL,
+	"sample_data" text,
 	"interfaces" jsonb,
 	"provider" "provider" DEFAULT 'openai' NOT NULL,
 	"model" text DEFAULT 'gpt-5.2' NOT NULL,

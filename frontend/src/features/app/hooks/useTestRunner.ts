@@ -53,17 +53,13 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
   const [isResultPanelOpen, setIsResultPanelOpen] = useState(false);
 
   useEffect(() => {
-    if (initialSampleData && !sampleData) {
+    if (initialSampleData !== undefined && initialSampleData !== null) {
       setSampleData(initialSampleData);
     }
-  }, [initialSampleData, sampleData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSampleData]);
 
   const runTest = useCallback(async (config: PromptConfig) => {
-    if (!sampleData.trim()) {
-      toast.error('Please enter sample data');
-      return;
-    }
-
     if (!config.systemPrompt.trim()) {
       toast.error('Please enter analysis instructions');
       return;
@@ -95,7 +91,7 @@ export function useTestRunner(options: UseTestRunnerOptions = {}): UseTestRunner
         queryClient.invalidateQueries({ queryKey: ['prompts', appId] });
       }
 
-      if (appId && sampleData.trim()) {
+      if (appId) {
         updateApp(appId, { sampleData })
           .then(() => {
             queryClient.invalidateQueries({ queryKey: ['app', appId] });

@@ -104,6 +104,21 @@ if (process.env.DATABASE_URL) {
       `
     }
 
+    // Add sample_data column to prompt_versions if not exists
+    const sampleDataColumnExists = await client`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_name = 'prompt_versions' 
+        AND column_name = 'sample_data'
+      )
+    `
+    if (!sampleDataColumnExists[0]?.exists) {
+      await client`
+        ALTER TABLE prompt_versions 
+        ADD COLUMN sample_data text
+      `
+    }
+
     // Add unique constraint on tool_definitions.name if it doesn't exist
     const nameConstraintExists = await client`
       SELECT EXISTS (

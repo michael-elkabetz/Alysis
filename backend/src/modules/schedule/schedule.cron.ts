@@ -40,7 +40,7 @@ function timeout(ms: number): Promise<never> {
 async function executeOutputTools(
   appId: string,
   appName: string,
-  result: { id: string; output?: unknown; latencyMs?: number },
+  result: { id: string; output?: unknown; rawResponse?: string | null; latencyMs?: number },
   status: 'success' | 'error',
   errorMessage?: string
 ): Promise<void> {
@@ -57,6 +57,7 @@ async function executeOutputTools(
           {
             appName,
             output: result.output,
+            rawResponse: result.rawResponse,
             status,
             latencyMs: result.latencyMs || 0,
             errorMessage,

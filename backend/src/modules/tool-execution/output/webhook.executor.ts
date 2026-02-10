@@ -9,21 +9,23 @@ export interface WebhookConfig {
 interface WebhookExecutionContext {
   appName: string
   output: unknown
+  rawResponse?: string | null
   status: 'success' | 'error'
   latencyMs: number
   errorMessage?: string
 }
 
-function formatWebhookPayload(context: WebhookExecutionContext): Record<string, unknown> {
-  return {
-    appName: context.appName,
-    status: context.status,
-    latencyMs: context.latencyMs,
-    timestamp: new Date().toISOString(),
-    ...(context.status === 'error' && context.errorMessage
-      ? { error: context.errorMessage }
-      : { data: context.output }),
+function formatWebhookPayload(context: WebhookExecutionContext): unknown {
+  if (context.status === 'error' && context.errorMessage) {
+    return { error: context.errorMessage }
   }
+
+  // Send model's raw response directly — format is controlled by system prompt
+  if (context.rawResponse) {
+    return context.rawResponse
+  }
+
+  return context.output ?? null
 }
 
 function normalizeUrl(url: string): string {
@@ -137,16 +139,17 @@ export class WebhookExecutor implements ToolExecutor {
 
     try {
       const payload = formatWebhookPayload(context)
+      const isStringPayload = typeof payload === 'string'
 
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        'Content-Type': isStringPayload ? 'text/plain' : 'application/json',
         ...config.headers,
       }
 
       const response = await fetch(normalizeUrl(config.webhookUrl), {
         method: config.method || 'POST',
         headers,
-        body: JSON.stringify(payload),
+        body: isStringPayload ? payload : JSON.stringify(payload),
       })
 
       const latencyMs = Date.now() - startTime

@@ -34,16 +34,11 @@ export class AnthropicClient implements AIClient {
     const client = await this.getClient()
 
     try {
-      let finalSystemPrompt = systemPrompt
-      if (config.responseFormat === 'json') {
-        finalSystemPrompt += '\n\nIMPORTANT: You must respond with valid JSON only. No additional text or explanation.'
-      }
-
       const response = await client.messages.create({
         model: config.model,
         max_tokens: config.maxTokens,
         temperature: config.temperature,
-        system: finalSystemPrompt,
+        system: systemPrompt,
         messages: [{ role: 'user', content: userInput }],
       })
 

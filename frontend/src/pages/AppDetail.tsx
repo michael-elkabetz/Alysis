@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Play, Activity, Loader2, Terminal, Trash2 } from 'lucide-react';
@@ -123,6 +123,9 @@ export default function AppDetail() {
 
   const currentModels = modelsByVendor[promptState.vendor] ?? [];
 
+  const activeVersion = versions.find(v => v.id === app?.activeVersionId) || versions[0];
+  const initialVersionSampleData = activeVersion?.sampleData ?? app?.sampleData;
+
   const {
     sampleData,
     setSampleData,
@@ -135,12 +138,17 @@ export default function AppDetail() {
   } = useTestRunner({ 
     appId: id, 
     versionId: selectedVersionId,
-    initialSampleData: app?.sampleData,
+    initialSampleData: initialVersionSampleData,
   });
 
   useEffect(() => {
     setCurrentSampleData(sampleData);
   }, [sampleData]);
+
+  const handleVersionSelect = useCallback((version: PromptVersion) => {
+    handleSelectVersion(version);
+    setSampleData(version.sampleData ?? '');
+  }, [handleSelectVersion, setSampleData]);
 
   const nameEdit = useInlineEdit({
     appId: id!,
@@ -338,7 +346,7 @@ export default function AppDetail() {
               versions={versions}
               selectedVersionId={selectedVersionId}
               latestVersion={latestVersion}
-              onSelectVersion={handleSelectVersion}
+              onSelectVersion={handleVersionSelect}
               onDeleteVersion={setVersionToDelete}
             />
 
@@ -357,7 +365,7 @@ export default function AppDetail() {
 
             <Button
               onClick={handleTest}
-              disabled={isTesting || !sampleData.trim() || !promptState.systemPrompt.trim()}
+              disabled={isTesting || !promptState.systemPrompt.trim()}
               className="btn-secondary gap-2 h-9"
               size="sm"
               title="Execute Prompt"

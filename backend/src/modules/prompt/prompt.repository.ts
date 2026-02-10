@@ -8,6 +8,7 @@ export const promptRepository = {
     analysisId: string
     version: number
     systemPrompt: string
+    sampleData?: string | null
     interfaces: AnalysisInterfaces | null
     vendor: Vendor
     model: string
@@ -23,6 +24,7 @@ export const promptRepository = {
         analysisId: data.analysisId,
         version: data.version,
         systemPrompt: data.systemPrompt,
+        sampleData: data.sampleData ?? null,
         interfaces: data.interfaces,
         provider: data.vendor,
         model: data.model,

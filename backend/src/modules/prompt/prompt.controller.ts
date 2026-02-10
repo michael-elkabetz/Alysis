@@ -19,6 +19,7 @@ export const promptController = new Elysia({ prefix: '/api/v1/apps/:id/prompts' 
     params: t.Object({ id: t.String() }),
     body: t.Object({
       systemPrompt: t.String({ minLength: 1 }),
+      sampleData: t.Optional(t.String()),
       vendor: t.Optional(VendorEnum),
       model: t.Optional(t.String()),
       temperature: t.Optional(t.Number({ minimum: 0, maximum: 2 })),

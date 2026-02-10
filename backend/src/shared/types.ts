@@ -93,6 +93,7 @@ export interface PromptVersion {
   analysisId: string
   version: number
   systemPrompt: string
+  sampleData: string | null
   interfaces: AnalysisInterfaces | null
   vendor: Vendor
   model: string
@@ -161,6 +162,7 @@ export interface UpdateAnalysisDto {
 
 export interface CreatePromptVersionDto {
   systemPrompt: string
+  sampleData?: string
   interfaces?: AnalysisInterfaces
   vendor?: Vendor
   model?: string
