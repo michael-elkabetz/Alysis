@@ -16,15 +16,15 @@ export class HttpExecutor implements ToolExecutor {
       'Content-Type': 'application/json',
     }
 
-    if (config.authType && config.authToken && config.authType !== 'none') {
+    const authType = config.authType as string
+    if (authType && config.authToken && authType !== 'none' && authType !== 'None') {
       const headerName = config.authHeaderName || 'Authorization'
-      const type = config.authType
 
-      if (type === 'bearer') {
+      if (authType === 'bearer' || authType === 'Bearer') {
         headers[headerName] = `Bearer ${config.authToken}`
-      } else if (type === 'basic') {
+      } else if (authType === 'basic' || authType === 'Basic') {
         headers[headerName] = `Basic ${config.authToken}`
-      } else if (type === 'api_key') {
+      } else if (authType === 'api_key' || authType === 'API Key') {
         headers[headerName] = config.authToken
       }
     }
@@ -34,8 +34,9 @@ export class HttpExecutor implements ToolExecutor {
 
   async testConnection(config: Record<string, unknown>): Promise<TestConnectionResult> {
     const httpConfig = config as unknown as HttpConfig
+    const testUrl = httpConfig.url || (config.baseUrl as string)
 
-    if (!httpConfig.url || !httpConfig.method) {
+    if (!testUrl) {
       return {
         success: false,
         error: 'No URL configured',
@@ -44,7 +45,7 @@ export class HttpExecutor implements ToolExecutor {
 
     try {
       const headers = this.buildHeaders(httpConfig)
-      const normalizedUrl = this.normalizeUrl(httpConfig.url)
+      const normalizedUrl = this.normalizeUrl(testUrl)
 
       await fetch(normalizedUrl, {
         method: 'HEAD',
@@ -64,14 +65,37 @@ export class HttpExecutor implements ToolExecutor {
 
   async execute(
     config: Record<string, unknown>,
-    _usageConfig: Record<string, unknown>
+    usageConfig: Record<string, unknown>
   ): Promise<ExecuteResult> {
     const httpConfig = config as unknown as HttpConfig
 
-    if (!httpConfig.url || !httpConfig.method) {
+    // usageConfig.endpoint takes priority over instance config's url.
+    // The UI saves method/endpoint/body into usageConfig, so scheduled
+    // execution must read from there — not only from the instance config.
+    const hasUsageEndpoint = !!(usageConfig.endpoint as string)
+
+    let method: string
+    let url: string
+    let body: string | undefined
+
+    if (hasUsageEndpoint) {
+      const endpoint = usageConfig.endpoint as string
+      const methodFromUsage = (usageConfig.method as string) || httpConfig.method || 'GET'
+      method = methodFromUsage
+      const baseUrl = (config.baseUrl as string) || ''
+      const normalizedBaseUrl = baseUrl ? this.normalizeUrl(baseUrl) : ''
+      url = normalizedBaseUrl
+        ? `${normalizedBaseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\/+/, '')}`
+        : this.normalizeUrl(endpoint)
+      body = usageConfig.body as string | undefined
+    } else if (httpConfig.url && httpConfig.method) {
+      method = httpConfig.method || 'GET'
+      url = this.normalizeUrl(httpConfig.url)
+      body = ['POST', 'PUT', 'PATCH'].includes(method) ? httpConfig.body : undefined
+    } else {
       return {
         success: false,
-        error: 'No URL configured',
+        error: 'No endpoint configured',
       }
     }
 
@@ -79,18 +103,17 @@ export class HttpExecutor implements ToolExecutor {
 
     try {
       const headers = this.buildHeaders(httpConfig)
-      const normalizedUrl = this.normalizeUrl(httpConfig.url)
 
       const fetchOptions: RequestInit = {
-        method: httpConfig.method || 'GET',
+        method,
         headers,
       }
 
-      if (['POST', 'PUT', 'PATCH'].includes(httpConfig.method) && httpConfig.body) {
-        fetchOptions.body = httpConfig.body
+      if (['POST', 'PUT', 'PATCH'].includes(method) && body) {
+        fetchOptions.body = body
       }
 
-      const response = await fetch(normalizedUrl, fetchOptions)
+      const response = await fetch(url, fetchOptions)
       const latencyMs = Date.now() - startTime
 
       const responseHeaders: Record<string, string> = {}
@@ -121,10 +144,10 @@ export class HttpExecutor implements ToolExecutor {
 
       const fullResponse = {
         request: {
-          method: httpConfig.method || 'GET',
-          url: normalizedUrl,
+          method,
+          url,
           headers: requestHeaders,
-          body: httpConfig.body || null,
+          body: body || null,
         },
         response: {
           status: response.status,
