@@ -75,11 +75,8 @@ async function fetchToolData(
 
   try {
     const appToolResults = await appToolUsageService.executeAllForApp(appId)
-    for (const [toolName, result] of appToolResults) {
-      if (result.success && result.data !== undefined) {
-        const key = `_tool_${toolName}`.replace(/[^a-zA-Z0-9_]/g, '_')
-        toolData[key] = result.data
-      }
+    if (appToolResults) {
+      Object.assign(toolData, appToolResults)
     }
   } catch (error) {
   }
@@ -160,17 +157,8 @@ export const executionService = {
     if (analysisId) {
       try {
         const toolData = await appToolUsageService.executeAllForApp(analysisId)
-        if (toolData && toolData.size > 0) {
-          const toolDataObj: Record<string, unknown> = {}
-          for (const [toolName, result] of toolData) {
-            if (result.success && result.data !== undefined) {
-              const key = `_tool_${toolName}`.replace(/[^a-zA-Z0-9_]/g, '_')
-              toolDataObj[key] = result.data
-            }
-          }
-          if (Object.keys(toolDataObj).length > 0) {
-            enrichedInput = { ...enrichedInput, ...toolDataObj }
-          }
+        if (toolData) {
+          enrichedInput = { ...enrichedInput, ...toolData }
         }
       } catch (error) {
       }

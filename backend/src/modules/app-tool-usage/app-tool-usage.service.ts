@@ -222,18 +222,26 @@ export const appToolUsageService = {
     return executorRegistry.execute(executorType, usage.instance.config, usageConfig)
   },
 
-  async executeAllForApp(appId: string): Promise<Map<string, { success: boolean; data?: unknown; error?: string }>> {
+  async executeAllForApp(appId: string): Promise<Record<string, unknown> | null> {
     const usages = await appToolUsageRepository.findByAppId(appId)
     const enabledUsages = usages.filter(u => u.enabled && u.definition.direction !== 'output')
-    const results = new Map<string, { success: boolean; data?: unknown; error?: string }>()
+
+    if (enabledUsages.length === 0) {
+      return null
+    }
+
+    const toolData: Record<string, unknown> = {}
 
     for (const usage of enabledUsages) {
       const executorType = usage.definition.executorType as ExecutorType
       const result = await executorRegistry.execute(executorType, usage.instance.config, usage.usageConfig)
-      results.set(usage.definition.name, result)
+      if (result.success && result.data !== undefined) {
+        const key = `_tool_${usage.definition.name}_${usage.instance.name}_${usage.id}`.replace(/[^a-zA-Z0-9_]/g, '_')
+        toolData[key] = result.data
+      }
     }
 
-    return results
+    return Object.keys(toolData).length > 0 ? toolData : null
   },
 
   async getOutputToolsForApp(appId: string): Promise<AppToolUsageResponse[]> {
